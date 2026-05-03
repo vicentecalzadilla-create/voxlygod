@@ -31,7 +31,7 @@ const FeedPage = () => {
             ) : (
               <ToggleLeft className="w-6 h-6 text-muted-foreground" />
             )}
-            <span className={autoNext ? 'gold-text' : 'text-muted-foreground'}>Auto</span>
+            <span className={autoNext ? 'gold-text font-medium' : 'text-muted-foreground'}>Auto</span>
           </button>
         </div>
         {/* Categories */}
@@ -40,11 +40,12 @@ const FeedPage = () => {
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`whitespace-nowrap text-xs px-3 py-1 rounded-full transition-all ${
+              className={`whitespace-nowrap text-xs px-3 py-1 rounded-full transition-all font-medium ${
                 activeCategory === cat
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                  ? 'text-primary-foreground gold-glow'
+                  : 'bg-secondary/70 text-secondary-foreground hover:bg-secondary'
               }`}
+              style={activeCategory === cat ? { background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))' } : undefined}
             >
               {cat}
             </button>

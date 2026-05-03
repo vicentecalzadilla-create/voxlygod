@@ -27,7 +27,7 @@ const CreatePage = () => {
   };
 
   return (
-    <div className="min-h-screen pb-24 pt-4 px-4 space-y-5">
+    <div className="min-h-screen pb-24 pt-4 px-4 space-y-5 pointillist-bg">
       <h1 className="font-serif text-xl font-bold gold-gradient">Crear Audio</h1>
 
       {/* Record / Upload */}
@@ -35,34 +35,41 @@ const CreatePage = () => {
         <button
           onClick={() => { setIsRecording(!isRecording); if (!isRecording) setTimeout(() => { setIsRecording(false); setHasAudio(true); }, 2000); }}
           className={`flex-1 h-32 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all ${
-            isRecording ? 'bg-destructive/20 border-2 border-destructive' : 'bg-card glass-border'
+            isRecording ? 'bg-destructive/10 border-2 border-destructive' : 'card-luminous'
           }`}
         >
-          <div className={`w-14 h-14 rounded-full flex items-center justify-center ${isRecording ? 'bg-destructive animate-pulse-glow' : 'bg-primary/20'}`}>
-            <Mic className={`w-6 h-6 ${isRecording ? 'text-foreground' : 'text-primary'}`} />
+          <div className={`w-14 h-14 rounded-full flex items-center justify-center ${isRecording ? 'bg-destructive/80 animate-pulse-glow' : ''}`}
+            style={!isRecording ? { background: 'linear-gradient(135deg, hsl(38 80% 55% / 0.2), hsl(340 60% 70% / 0.2))' } : undefined}
+          >
+            <Mic className={`w-6 h-6 ${isRecording ? 'text-primary-foreground' : 'text-primary'}`} />
           </div>
           <span className="text-xs font-medium">{isRecording ? 'Grabando...' : hasAudio ? 'Grabar de nuevo' : 'Grabar audio'}</span>
         </button>
 
         <button
           onClick={() => setHasAudio(true)}
-          className="flex-1 h-32 rounded-2xl bg-card glass-border flex flex-col items-center justify-center gap-2 hover:bg-secondary/50 transition-colors"
+          className="flex-1 h-32 rounded-2xl card-luminous flex flex-col items-center justify-center gap-2 hover:shadow-md transition-all"
         >
-          <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center">
-            <Upload className="w-6 h-6 text-accent-foreground" />
+          <div className="w-14 h-14 rounded-full flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, hsl(200 70% 70% / 0.2), hsl(270 50% 65% / 0.2))' }}>
+            <Upload className="w-6 h-6 text-accent" />
           </div>
           <span className="text-xs font-medium">Subir archivo</span>
         </button>
       </div>
 
       {hasAudio && (
-        <div className="p-3 rounded-xl bg-primary/10 glass-border flex items-center gap-3">
+        <div className="p-3 rounded-xl glass-border flex items-center gap-3"
+          style={{ background: 'linear-gradient(135deg, hsl(38 80% 55% / 0.08), hsl(340 60% 70% / 0.06))' }}>
           <div className="flex gap-[2px] items-end h-6">
             {Array.from({ length: 20 }).map((_, i) => (
-              <div key={i} className="w-[2px] rounded-full bg-primary" style={{ height: `${8 + Math.random() * 16}px` }} />
+              <div key={i} className="w-[2px] rounded-full" style={{
+                height: `${8 + Math.random() * 16}px`,
+                background: `hsl(${38 + i * 12} 70% 60%)`,
+              }} />
             ))}
           </div>
-          <span className="text-xs text-primary ml-auto">0:32</span>
+          <span className="text-xs text-primary ml-auto font-medium">0:32</span>
         </div>
       )}
 
@@ -73,7 +80,7 @@ const CreatePage = () => {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Ej: Reflexión sobre el amor de Dios"
-          className="w-full h-11 px-3 rounded-xl bg-secondary text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full h-11 px-3 rounded-xl bg-card/80 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
         />
       </div>
 
@@ -85,7 +92,7 @@ const CreatePage = () => {
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Describe tu audio..."
           rows={3}
-          className="w-full px-3 py-2 rounded-xl bg-secondary text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+          className="w-full px-3 py-2 rounded-xl bg-card/80 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none shadow-sm"
         />
       </div>
 
@@ -98,13 +105,14 @@ const CreatePage = () => {
             onChange={(e) => setTagInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addTag()}
             placeholder="Ej: Fe, Salmos..."
-            className="flex-1 h-10 px-3 rounded-xl bg-secondary text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            className="flex-1 h-10 px-3 rounded-xl bg-card/80 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
           />
-          <button onClick={addTag} className="px-4 h-10 rounded-xl bg-primary text-primary-foreground text-sm font-medium">+</button>
+          <button onClick={addTag} className="px-4 h-10 rounded-xl text-primary-foreground text-sm font-medium shadow-sm"
+            style={{ background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))' }}>+</button>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {tags.map(tag => (
-            <span key={tag} className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-primary/10 gold-text">
+            <span key={tag} className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-primary/15 gold-text font-medium">
               #{tag}
               <button onClick={() => setTags(tags.filter(t => t !== tag))}><X className="w-3 h-3" /></button>
             </span>
@@ -121,18 +129,19 @@ const CreatePage = () => {
               key={ef.id}
               onClick={() => setSelectedEffect(ef.id)}
               className={`flex-1 py-3 rounded-xl flex flex-col items-center gap-1 transition-all ${
-                selectedEffect === ef.id ? 'bg-primary/20 ring-1 ring-primary' : 'bg-secondary'
+                selectedEffect === ef.id ? 'ring-1 ring-primary magic-glow' : 'bg-card/60'
               }`}
+              style={selectedEffect === ef.id ? { background: 'linear-gradient(135deg, hsl(38 80% 55% / 0.15), hsl(270 50% 65% / 0.1))' } : undefined}
             >
               <span className="text-xl">{ef.emoji}</span>
-              <span className="text-[9px]">{ef.label}</span>
+              <span className="text-[9px] font-medium">{ef.label}</span>
             </button>
           ))}
         </div>
       </div>
 
       {/* Options */}
-      <div className="flex items-center justify-between p-3 rounded-xl bg-card glass-border">
+      <div className="flex items-center justify-between p-3 rounded-xl card-luminous">
         <div>
           <p className="text-xs font-medium">Permitir cambio de voz</p>
           <p className="text-[10px] text-muted-foreground">Los oyentes pueden elegir otra voz IA</p>
@@ -141,17 +150,18 @@ const CreatePage = () => {
           onClick={() => setAllowVoiceChange(!allowVoiceChange)}
           className={`w-10 h-6 rounded-full transition-colors relative ${allowVoiceChange ? 'bg-primary' : 'bg-secondary'}`}
         >
-          <div className={`w-4 h-4 rounded-full bg-foreground absolute top-1 transition-all ${allowVoiceChange ? 'left-5' : 'left-1'}`} />
+          <div className={`w-4 h-4 rounded-full bg-primary-foreground absolute top-1 transition-all ${allowVoiceChange ? 'left-5' : 'left-1'}`} />
         </button>
       </div>
 
       {/* AI suggest */}
-      <button className="w-full h-11 rounded-xl bg-accent/20 text-accent-foreground text-sm font-medium flex items-center justify-center gap-2 hover:bg-accent/30 transition-colors">
+      <button className="w-full h-11 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all hover:shadow-md card-luminous text-accent">
         <Wand2 className="w-4 h-4" /> Sugerir efecto y tags con IA
       </button>
 
       {/* Publish */}
-      <button className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold text-sm gold-glow transition-transform active:scale-[0.98]">
+      <button className="w-full h-12 rounded-xl text-primary-foreground font-semibold text-sm gold-glow transition-transform active:scale-[0.98]"
+        style={{ background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%), hsl(270 50% 65%))' }}>
         Publicar Audio
       </button>
     </div>

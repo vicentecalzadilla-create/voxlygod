@@ -34,11 +34,12 @@ const BottomNav = () => {
               }`}
             >
               {isCreate ? (
-                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center gold-glow">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center gold-glow shadow-lg"
+                  style={{ background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))' }}>
                   <Icon className="w-6 h-6 text-primary-foreground" />
                 </div>
               ) : (
-                <Icon className={`w-5 h-5 ${isActive ? 'drop-shadow-[0_0_6px_hsl(40_60%_55%/0.5)]' : ''}`} />
+                <Icon className={`w-5 h-5 ${isActive ? 'drop-shadow-[0_0_6px_hsl(38_80%_55%/0.5)]' : ''}`} />
               )}
               <span className={`text-[10px] font-medium ${isCreate ? 'gold-text' : ''}`}>{label}</span>
             </button>
