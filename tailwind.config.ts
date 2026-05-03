@@ -29,13 +29,11 @@ export default {
           soft: "hsl(var(--gold-soft))",
           glow: "hsl(var(--gold-glow))",
         },
-        navy: {
-          DEFAULT: "hsl(var(--navy))",
-          deep: "hsl(var(--navy-deep))",
-        },
-        spiritual: {
-          blue: "hsl(var(--spiritual-blue))",
-        },
+        rose: { DEFAULT: "hsl(var(--rose))" },
+        turquoise: { DEFAULT: "hsl(var(--turquoise))" },
+        violet: { DEFAULT: "hsl(var(--violet))" },
+        "sky-blue": { DEFAULT: "hsl(var(--sky-blue))" },
+        "warm-orange": { DEFAULT: "hsl(var(--warm-orange))" },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -45,11 +43,18 @@ export default {
       keyframes: {
         "accordion-down": { from: { height: "0" }, to: { height: "var(--radix-accordion-content-height)" } },
         "accordion-up": { from: { height: "var(--radix-accordion-content-height)" }, to: { height: "0" } },
-        "pulse-glow": { "0%, 100%": { opacity: "0.4", transform: "scale(1)" }, "50%": { opacity: "0.8", transform: "scale(1.05)" } },
-        "float": { "0%, 100%": { transform: "translateY(0)" }, "50%": { transform: "translateY(-10px)" } },
+        "pulse-glow": { "0%, 100%": { opacity: "0.4", transform: "scale(1)" }, "50%": { opacity: "0.85", transform: "scale(1.08)" } },
+        "float": { "0%, 100%": { transform: "translateY(0)" }, "50%": { transform: "translateY(-12px)" } },
         "wave": { "0%": { transform: "scaleY(0.3)" }, "50%": { transform: "scaleY(1)" }, "100%": { transform: "scaleY(0.3)" } },
         "fade-in-up": { from: { opacity: "0", transform: "translateY(20px)" }, to: { opacity: "1", transform: "translateY(0)" } },
         "spin-slow": { from: { transform: "rotate(0deg)" }, to: { transform: "rotate(360deg)" } },
+        "sparkle": { "0%, 100%": { opacity: "0", transform: "scale(0)" }, "50%": { opacity: "1", transform: "scale(1)" } },
+        "drift": {
+          "0%": { transform: "translate(0,0) rotate(0deg)" },
+          "33%": { transform: "translate(10px,-15px) rotate(120deg)" },
+          "66%": { transform: "translate(-8px,-8px) rotate(240deg)" },
+          "100%": { transform: "translate(0,0) rotate(360deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -59,6 +64,8 @@ export default {
         "wave": "wave 1.2s ease-in-out infinite",
         "fade-in-up": "fade-in-up 0.6s ease-out",
         "spin-slow": "spin-slow 8s linear infinite",
+        "sparkle": "sparkle 2s ease-in-out infinite",
+        "drift": "drift 6s ease-in-out infinite",
       },
     },
   },
