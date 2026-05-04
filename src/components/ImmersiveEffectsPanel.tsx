@@ -20,28 +20,17 @@ const ImmersiveEffectsPanel = ({ audioId, isPlaying, allowEffects = true }: Imme
 
   const engine = getAudioEffectsEngine();
 
-  useEffect(() => {
-    if (!isPreviewing) {
-      engine.stop();
-    }
-  }, [isPreviewing]);
-
   const selectEffect = useCallback((effect: EffectType) => {
     setActiveEffect(effect);
     localStorage.setItem(`voxly-effect-${audioId}`, effect);
     engine.applyEffect(effect);
 
-    // Preview the effect briefly
-    if (!isPreviewing) {
-      setIsPreviewing(true);
-      engine.applyEffect(effect);
-      engine.play();
-      setTimeout(() => {
-        engine.stop();
-        setIsPreviewing(false);
-      }, 2000);
-    }
-  }, [audioId, engine, isPreviewing]);
+    // Show preview indicator briefly
+    setIsPreviewing(true);
+    setTimeout(() => {
+      setIsPreviewing(false);
+    }, 2000);
+  }, [audioId, engine]);
 
   if (!allowEffects) return null;
 
