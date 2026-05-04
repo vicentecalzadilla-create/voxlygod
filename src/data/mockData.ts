@@ -15,6 +15,7 @@ export interface AudioPost {
   isLiked: boolean;
   isSaved: boolean;
   allowImmersiveEffects: boolean;
+  audioUrl?: string;
 }
 
 export interface Creator {
@@ -35,6 +36,15 @@ export interface Playlist {
   creator: string;
 }
 
+// Free public domain sample audio URLs for demo
+const SAMPLE_AUDIO_URLS = [
+  'https://upload.wikimedia.org/wikipedia/commons/4/4b/Psalm_23_KJV.ogg',
+  'https://upload.wikimedia.org/wikipedia/commons/6/6d/Chopin_-_Nocturne_op.9_No.2.ogg',
+  'https://upload.wikimedia.org/wikipedia/commons/e/ea/Debussy_-_Clair_de_Lune.ogg',
+  'https://upload.wikimedia.org/wikipedia/commons/2/21/Beethoven_-_Moonlight_Sonata.ogg',
+  'https://upload.wikimedia.org/wikipedia/commons/c/c9/Pachelbel_-_Canon_in_D.ogg',
+];
+
 export const mockAudios: AudioPost[] = [
   {
     id: '1',
@@ -53,6 +63,7 @@ export const mockAudios: AudioPost[] = [
     isLiked: false,
     isSaved: false,
     allowImmersiveEffects: true,
+    audioUrl: SAMPLE_AUDIO_URLS[0],
   },
   {
     id: '2',
@@ -70,6 +81,7 @@ export const mockAudios: AudioPost[] = [
     isLiked: true,
     isSaved: false,
     allowImmersiveEffects: true,
+    audioUrl: SAMPLE_AUDIO_URLS[1],
   },
   {
     id: '3',
@@ -88,6 +100,7 @@ export const mockAudios: AudioPost[] = [
     isLiked: false,
     isSaved: true,
     allowImmersiveEffects: true,
+    audioUrl: SAMPLE_AUDIO_URLS[2],
   },
   {
     id: '4',
@@ -105,6 +118,7 @@ export const mockAudios: AudioPost[] = [
     isLiked: false,
     isSaved: false,
     allowImmersiveEffects: true,
+    audioUrl: SAMPLE_AUDIO_URLS[3],
   },
   {
     id: '5',
@@ -123,6 +137,7 @@ export const mockAudios: AudioPost[] = [
     isLiked: true,
     isSaved: true,
     allowImmersiveEffects: true,
+    audioUrl: SAMPLE_AUDIO_URLS[4],
   },
 ];
 

@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Heart, MessageCircle, Share2, Bookmark, Play, Pause, SkipForward } from 'lucide-react';
 import type { AudioPost } from '@/data/mockData';
 import AudioVisualizer from './AudioVisualizer';
 import ImmersiveEffectsPanel from './ImmersiveEffectsPanel';
 import { useTheme } from '@/contexts/ThemeContext';
+import { getAudioEffectsEngine } from '@/audio/AudioEffectsEngine';
 
 interface AudioCardProps {
   audio: AudioPost;
@@ -12,13 +13,96 @@ interface AudioCardProps {
 }
 
 const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
-  const [isPlaying, setIsPlaying] = useState(isActive);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [liked, setLiked] = useState(audio.isLiked);
   const [saved, setSaved] = useState(audio.isSaved);
   const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(audio.duration);
   const { theme } = useTheme();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const connectedRef = useRef(false);
 
-  const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+  const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60 | 0).toString().padStart(2, '0')}`;
+
+  // Connect audio element to Web Audio API engine
+  const connectToEngine = useCallback(() => {
+    if (audioRef.current && !connectedRef.current) {
+      try {
+        const engine = getAudioEffectsEngine();
+        engine.connectAudio(audioRef.current);
+        connectedRef.current = true;
+        // Restore saved effect
+        const savedEffect = localStorage.getItem(`voxly-effect-${audio.id}`);
+        if (savedEffect) {
+          engine.applyEffect(savedEffect as any);
+        }
+      } catch (e) {
+        console.warn('Could not connect audio to Web Audio API:', e);
+      }
+    }
+  }, [audio.id]);
+
+  // Handle play/pause
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+
+    if (isActive && isPlaying) {
+      connectToEngine();
+      const engine = getAudioEffectsEngine();
+      engine.resume();
+      el.play().catch(() => {});
+    } else {
+      el.pause();
+    }
+  }, [isActive, isPlaying, connectToEngine]);
+
+  // Pause when card becomes inactive
+  useEffect(() => {
+    if (!isActive) {
+      setIsPlaying(false);
+      audioRef.current?.pause();
+    }
+  }, [isActive]);
+
+  // Time update handler
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+
+    const onTimeUpdate = () => {
+      setCurrentTime(el.currentTime);
+      if (el.duration && isFinite(el.duration)) {
+        setProgress((el.currentTime / el.duration) * 100);
+      }
+    };
+
+    const onLoadedMetadata = () => {
+      if (el.duration && isFinite(el.duration)) {
+        setDuration(el.duration);
+      }
+    };
+
+    const onEnded = () => {
+      setIsPlaying(false);
+      setProgress(0);
+      onNext();
+    };
+
+    el.addEventListener('timeupdate', onTimeUpdate);
+    el.addEventListener('loadedmetadata', onLoadedMetadata);
+    el.addEventListener('ended', onEnded);
+    return () => {
+      el.removeEventListener('timeupdate', onTimeUpdate);
+      el.removeEventListener('loadedmetadata', onLoadedMetadata);
+      el.removeEventListener('ended', onEnded);
+    };
+  }, [onNext]);
+
+  const togglePlay = () => {
+    setIsPlaying(!isPlaying);
+  };
 
   const bgGradient = theme === 'dark'
     ? 'linear-gradient(165deg, hsl(222 47% 8%) 0%, hsl(222 47% 10%) 25%, hsl(230 40% 12%) 55%, hsl(222 47% 8%) 100%)'
@@ -26,6 +110,14 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
 
   return (
     <div className="relative h-[calc(100vh-4rem)] w-full snap-start flex flex-col">
+      {/* Hidden audio element */}
+      <audio
+        ref={audioRef}
+        src={audio.audioUrl}
+        preload="metadata"
+        crossOrigin="anonymous"
+      />
+
       {/* Background */}
       <div className="absolute inset-0" style={{ background: bgGradient }} />
 
@@ -34,20 +126,18 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
         <AudioVisualizer isPlaying={isPlaying && isActive} effect={audio.visualEffect} />
       </div>
 
-      {/* Follow button - top right, above side actions */}
-      <div className="absolute right-3 top-4 z-20">
-        <button className="text-[10px] px-2.5 py-1 rounded-full border border-primary/40 text-primary hover:bg-primary/10 transition-colors font-medium bg-card/60 backdrop-blur-sm">
-          Seguir
-        </button>
-      </div>
-
       {/* Content overlay */}
       <div className="relative px-4 pb-4 space-y-3">
         {/* Creator */}
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold/30 to-rose/30 flex items-center justify-center text-lg shadow-sm">{audio.creatorAvatar}</div>
-          <div>
-            <p className="text-sm font-semibold text-foreground">{audio.creatorName}</p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold text-foreground truncate">{audio.creatorName}</p>
+              <button className="shrink-0 text-[10px] px-2.5 py-0.5 rounded-full border border-primary/40 text-primary hover:bg-primary/10 transition-colors font-medium bg-card/60 backdrop-blur-sm">
+                Seguir
+              </button>
+            </div>
             <p className="text-[10px] text-muted-foreground">{audio.category}</p>
           </div>
         </div>
@@ -85,12 +175,12 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
             />
           </div>
           <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-            <span>{formatTime(Math.floor(audio.duration * progress / 100))}</span>
-            <span>{formatTime(audio.duration)}</span>
+            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(duration)}</span>
           </div>
           <div className="flex items-center justify-center gap-6">
             <button
-              onClick={() => setIsPlaying(!isPlaying)}
+              onClick={togglePlay}
               className="w-14 h-14 rounded-full flex items-center justify-center gold-glow transition-transform active:scale-95"
               style={{ background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))' }}
             >

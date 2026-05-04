@@ -34,14 +34,9 @@ const CreatePage = () => {
 
   const handlePreviewEffect = (effect: EffectType) => {
     setPreviewEffect(effect);
-    if (isPreviewing) {
-      engine.stop();
-    }
     setIsPreviewing(true);
     engine.applyEffect(effect);
-    engine.play();
     setTimeout(() => {
-      engine.stop();
       setIsPreviewing(false);
     }, 2500);
   };
