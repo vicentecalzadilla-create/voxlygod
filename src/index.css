@@ -35,6 +35,36 @@
     --sky-blue: 200 70% 70%;
     --warm-orange: 25 80% 60%;
   }
+
+  .dark-theme {
+    --background: 222 47% 8%;
+    --foreground: 210 20% 90%;
+    --card: 222 47% 12%;
+    --card-foreground: 210 20% 90%;
+    --popover: 222 47% 12%;
+    --popover-foreground: 210 20% 90%;
+    --primary: 38 60% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 30% 18%;
+    --secondary-foreground: 210 20% 80%;
+    --muted: 222 25% 15%;
+    --muted-foreground: 220 10% 55%;
+    --accent: 270 40% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 222 20% 20%;
+    --input: 222 20% 20%;
+    --ring: 38 60% 50%;
+    --gold: 38 60% 50%;
+    --gold-soft: 38 40% 45%;
+    --gold-glow: 38 70% 55%;
+    --rose: 340 50% 55%;
+    --turquoise: 175 40% 45%;
+    --violet: 270 40% 50%;
+    --sky-blue: 200 50% 55%;
+    --warm-orange: 25 60% 50%;
+  }
 }
 
 @layer base {
@@ -51,6 +81,15 @@
       hsl(38 50% 93%) 100%
     );
     min-height: 100vh;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+  .dark-theme body {
+    background: linear-gradient(165deg,
+      hsl(222 47% 8%) 0%,
+      hsl(222 47% 10%) 30%,
+      hsl(230 40% 12%) 60%,
+      hsl(222 47% 8%) 100%
+    );
   }
   h1, h2, h3, h4 {
     font-family: 'Playfair Display', serif;
