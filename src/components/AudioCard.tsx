@@ -48,7 +48,7 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
   useEffect(() => {
     const savedVoice = localStorage.getItem(`voxly-voice-${audio.id}`);
     if (savedVoice && audioRef.current) {
-      const { VOICES } = require('./VoiceSelectorPanel');
+      const { VOICES } = await import('./VoiceSelectorPanel');
       const voice = VOICES?.find((v: any) => v.id === savedVoice);
       if (voice) audioRef.current.playbackRate = voice.pitch;
     }
