@@ -34,20 +34,18 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
         <AudioVisualizer isPlaying={isPlaying && isActive} effect={audio.visualEffect} />
       </div>
 
-      {/* Follow button - top right, above side actions */}
-      <div className="absolute right-3 top-4 z-20">
-        <button className="text-[10px] px-2.5 py-1 rounded-full border border-primary/40 text-primary hover:bg-primary/10 transition-colors font-medium bg-card/60 backdrop-blur-sm">
-          Seguir
-        </button>
-      </div>
-
       {/* Content overlay */}
       <div className="relative px-4 pb-4 space-y-3">
         {/* Creator */}
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold/30 to-rose/30 flex items-center justify-center text-lg shadow-sm">{audio.creatorAvatar}</div>
-          <div>
-            <p className="text-sm font-semibold text-foreground">{audio.creatorName}</p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold text-foreground truncate">{audio.creatorName}</p>
+              <button className="shrink-0 text-[10px] px-2.5 py-0.5 rounded-full border border-primary/40 text-primary hover:bg-primary/10 transition-colors font-medium bg-card/60 backdrop-blur-sm">
+                Seguir
+              </button>
+            </div>
             <p className="text-[10px] text-muted-foreground">{audio.category}</p>
           </div>
         </div>
