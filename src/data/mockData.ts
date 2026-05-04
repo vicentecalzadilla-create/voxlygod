@@ -14,6 +14,7 @@ export interface AudioPost {
   visualEffect: 'light-rays' | 'cross' | 'clouds' | 'candles' | 'bible';
   isLiked: boolean;
   isSaved: boolean;
+  allowImmersiveEffects: boolean;
 }
 
 export interface Creator {
