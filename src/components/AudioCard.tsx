@@ -68,6 +68,11 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
           ))}
         </div>
 
+        {/* Immersive Effects */}
+        <div className="flex items-center gap-2">
+          <ImmersiveEffectsPanel audioId={audio.id} isPlaying={isPlaying && isActive} />
+        </div>
+
         {/* Player controls */}
         <div className="space-y-2">
           <div className="relative h-1.5 bg-secondary rounded-full overflow-hidden">
