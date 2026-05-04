@@ -14,7 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audios: {
+        Row: {
+          allow_immersive_effects: boolean | null
+          allow_voice_change: boolean | null
+          audio_url: string
+          category: string
+          comments: number | null
+          created_at: string | null
+          creator_avatar: string | null
+          creator_name: string
+          description: string | null
+          duration: number | null
+          id: string
+          likes: number | null
+          shares: number | null
+          tags: string[] | null
+          title: string
+          user_id: string | null
+          verse: string | null
+          visual_effect: string | null
+        }
+        Insert: {
+          allow_immersive_effects?: boolean | null
+          allow_voice_change?: boolean | null
+          audio_url: string
+          category?: string
+          comments?: number | null
+          created_at?: string | null
+          creator_avatar?: string | null
+          creator_name: string
+          description?: string | null
+          duration?: number | null
+          id?: string
+          likes?: number | null
+          shares?: number | null
+          tags?: string[] | null
+          title: string
+          user_id?: string | null
+          verse?: string | null
+          visual_effect?: string | null
+        }
+        Update: {
+          allow_immersive_effects?: boolean | null
+          allow_voice_change?: boolean | null
+          audio_url?: string
+          category?: string
+          comments?: number | null
+          created_at?: string | null
+          creator_avatar?: string | null
+          creator_name?: string
+          description?: string | null
+          duration?: number | null
+          id?: string
+          likes?: number | null
+          shares?: number | null
+          tags?: string[] | null
+          title?: string
+          user_id?: string | null
+          verse?: string | null
+          visual_effect?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
