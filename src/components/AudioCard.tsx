@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Heart, MessageCircle, Share2, Bookmark, Play, Pause, SkipForward } from 'lucide-react';
 import type { AudioPost } from '@/data/mockData';
 import AudioVisualizer from './AudioVisualizer';
+import ImmersiveEffectsPanel from './ImmersiveEffectsPanel';
 import { useTheme } from '@/contexts/ThemeContext';
 
 interface AudioCardProps {
