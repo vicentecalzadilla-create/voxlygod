@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Heart, MessageCircle, Share2, Bookmark, Play, Pause, SkipForward } from 'lucide-react';
 import type { AudioPost } from '@/data/mockData';
 import AudioVisualizer from './AudioVisualizer';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface AudioCardProps {
   audio: AudioPost;
@@ -14,21 +15,29 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
   const [liked, setLiked] = useState(audio.isLiked);
   const [saved, setSaved] = useState(audio.isSaved);
   const [progress, setProgress] = useState(0);
+  const { theme } = useTheme();
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
+  const bgGradient = theme === 'dark'
+    ? 'linear-gradient(165deg, hsl(222 47% 8%) 0%, hsl(222 47% 10%) 25%, hsl(230 40% 12%) 55%, hsl(222 47% 8%) 100%)'
+    : 'linear-gradient(165deg, hsl(200 70% 92%) 0%, hsl(210 40% 96%) 25%, hsl(340 40% 94%) 55%, hsl(38 50% 93%) 100%)';
+
   return (
     <div className="relative h-[calc(100vh-4rem)] w-full snap-start flex flex-col">
-      {/* Background - luminous gradient */}
-      <div className="absolute inset-0"
-        style={{
-          background: 'linear-gradient(165deg, hsl(200 70% 92%) 0%, hsl(210 40% 96%) 25%, hsl(340 40% 94%) 55%, hsl(38 50% 93%) 100%)'
-        }}
-      />
+      {/* Background */}
+      <div className="absolute inset-0" style={{ background: bgGradient }} />
 
       {/* Visualizer */}
       <div className="relative flex-1 flex items-center justify-center">
         <AudioVisualizer isPlaying={isPlaying && isActive} effect={audio.visualEffect} />
+      </div>
+
+      {/* Follow button - top right, above side actions */}
+      <div className="absolute right-3 top-4 z-20">
+        <button className="text-[10px] px-2.5 py-1 rounded-full border border-primary/40 text-primary hover:bg-primary/10 transition-colors font-medium bg-card/60 backdrop-blur-sm">
+          Seguir
+        </button>
       </div>
 
       {/* Content overlay */}
@@ -40,9 +49,6 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
             <p className="text-sm font-semibold text-foreground">{audio.creatorName}</p>
             <p className="text-[10px] text-muted-foreground">{audio.category}</p>
           </div>
-          <button className="ml-auto text-xs px-3 py-1 rounded-full border border-primary/40 text-primary hover:bg-primary/10 transition-colors font-medium">
-            Seguir
-          </button>
         </div>
 
         {/* Title & verse */}
