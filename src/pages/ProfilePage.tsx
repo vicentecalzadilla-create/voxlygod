@@ -1,14 +1,35 @@
-import { Settings, Heart, Bookmark, Clock, LogOut, ChevronRight } from 'lucide-react';
+import { Settings, Heart, Bookmark, Clock, LogOut, ChevronRight, Sun, Moon } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const ProfilePage = () => {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <div className="min-h-screen pb-20 pt-4 px-4 space-y-6 pointillist-bg">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-xl font-bold gold-gradient">Perfil</h1>
-        <button className="w-9 h-9 rounded-full bg-card/80 shadow-sm flex items-center justify-center">
-          <Settings className="w-4 h-4 text-muted-foreground" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full card-luminous text-xs font-medium transition-all"
+          >
+            {theme === 'luminous' ? (
+              <>
+                <Sun className="w-4 h-4 text-primary" />
+                <span className="gold-text">Luminoso</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-4 h-4 text-primary" />
+                <span className="gold-text">Oscuro</span>
+              </>
+            )}
+          </button>
+          <button className="w-9 h-9 rounded-full bg-card/80 shadow-sm flex items-center justify-center">
+            <Settings className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </div>
       </div>
 
       {/* Avatar & info */}
