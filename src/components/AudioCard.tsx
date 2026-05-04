@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Heart, MessageCircle, Share2, Bookmark, Play, Pause, SkipForward } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, Play, Pause, SkipForward, Repeat, Repeat1 } from 'lucide-react';
 import type { AudioPost } from '@/data/mockData';
 import AudioVisualizer from './AudioVisualizer';
 import ImmersiveEffectsPanel from './ImmersiveEffectsPanel';
+import TranscriptionPanel from './TranscriptionPanel';
+import VoiceSelectorPanel from './VoiceSelectorPanel';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getAudioEffectsEngine } from '@/audio/AudioEffectsEngine';
 
@@ -12,6 +14,8 @@ interface AudioCardProps {
   onNext: () => void;
 }
 
+type RepeatMode = 'none' | 'one' | 'loop';
+
 const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [liked, setLiked] = useState(audio.isLiked);
@@ -19,46 +23,50 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(audio.duration);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>('none');
   const { theme } = useTheme();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const connectedRef = useRef(false);
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60 | 0).toString().padStart(2, '0')}`;
 
-  // Connect audio element to Web Audio API engine
   const connectToEngine = useCallback(() => {
     if (audioRef.current && !connectedRef.current) {
       try {
         const engine = getAudioEffectsEngine();
         engine.connectAudio(audioRef.current);
         connectedRef.current = true;
-        // Restore saved effect
         const savedEffect = localStorage.getItem(`voxly-effect-${audio.id}`);
-        if (savedEffect) {
-          engine.applyEffect(savedEffect as any);
-        }
+        if (savedEffect) engine.applyEffect(savedEffect as any);
       } catch (e) {
         console.warn('Could not connect audio to Web Audio API:', e);
       }
     }
   }, [audio.id]);
 
-  // Handle play/pause
+  // Restore voice setting on mount
+  useEffect(() => {
+    const savedVoice = localStorage.getItem(`voxly-voice-${audio.id}`);
+    if (savedVoice && audioRef.current) {
+      import('./VoiceSelectorPanel').then(({ VOICES }) => {
+        const voice = VOICES?.find((v) => v.id === savedVoice);
+        if (voice && audioRef.current) audioRef.current.playbackRate = voice.pitch;
+      });
+    }
+  }, [audio.id]);
+
   useEffect(() => {
     const el = audioRef.current;
     if (!el) return;
-
     if (isActive && isPlaying) {
       connectToEngine();
-      const engine = getAudioEffectsEngine();
-      engine.resume();
+      getAudioEffectsEngine().resume();
       el.play().catch(() => {});
     } else {
       el.pause();
     }
   }, [isActive, isPlaying, connectToEngine]);
 
-  // Pause when card becomes inactive
   useEffect(() => {
     if (!isActive) {
       setIsPlaying(false);
@@ -66,28 +74,30 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
     }
   }, [isActive]);
 
-  // Time update handler
   useEffect(() => {
     const el = audioRef.current;
     if (!el) return;
 
     const onTimeUpdate = () => {
       setCurrentTime(el.currentTime);
-      if (el.duration && isFinite(el.duration)) {
-        setProgress((el.currentTime / el.duration) * 100);
-      }
+      if (el.duration && isFinite(el.duration)) setProgress((el.currentTime / el.duration) * 100);
     };
-
     const onLoadedMetadata = () => {
-      if (el.duration && isFinite(el.duration)) {
-        setDuration(el.duration);
-      }
+      if (el.duration && isFinite(el.duration)) setDuration(el.duration);
     };
-
     const onEnded = () => {
-      setIsPlaying(false);
-      setProgress(0);
-      onNext();
+      if (repeatMode === 'loop') {
+        el.currentTime = 0;
+        el.play().catch(() => {});
+      } else if (repeatMode === 'one') {
+        el.currentTime = 0;
+        el.play().catch(() => {});
+        setRepeatMode('none'); // play once more then stop repeating
+      } else {
+        setIsPlaying(false);
+        setProgress(0);
+        onNext();
+      }
     };
 
     el.addEventListener('timeupdate', onTimeUpdate);
@@ -98,10 +108,12 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
       el.removeEventListener('loadedmetadata', onLoadedMetadata);
       el.removeEventListener('ended', onEnded);
     };
-  }, [onNext]);
+  }, [onNext, repeatMode]);
 
-  const togglePlay = () => {
-    setIsPlaying(!isPlaying);
+  const togglePlay = () => setIsPlaying(!isPlaying);
+
+  const cycleRepeat = () => {
+    setRepeatMode(prev => prev === 'none' ? 'one' : prev === 'one' ? 'loop' : 'none');
   };
 
   const bgGradient = theme === 'dark'
@@ -110,15 +122,7 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
 
   return (
     <div className="relative h-[calc(100vh-4rem)] w-full snap-start flex flex-col">
-      {/* Hidden audio element */}
-      <audio
-        ref={audioRef}
-        src={audio.audioUrl}
-        preload="metadata"
-        crossOrigin="anonymous"
-      />
-
-      {/* Background */}
+      <audio ref={audioRef} src={audio.audioUrl} preload="metadata" crossOrigin="anonymous" />
       <div className="absolute inset-0" style={{ background: bgGradient }} />
 
       {/* Visualizer */}
@@ -127,7 +131,7 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
       </div>
 
       {/* Content overlay */}
-      <div className="relative px-4 pb-4 space-y-3">
+      <div className="relative px-4 pb-4 space-y-2.5">
         {/* Creator */}
         <div className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold/30 to-rose/30 flex items-center justify-center text-lg shadow-sm">{audio.creatorAvatar}</div>
@@ -158,9 +162,13 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
           ))}
         </div>
 
-        {/* Immersive Effects */}
-        <div className="flex items-center gap-2">
+        {/* Transcription */}
+        <TranscriptionPanel audioId={audio.id} currentTime={currentTime} isPlaying={isPlaying && isActive} />
+
+        {/* Effects & Voice row */}
+        <div className="flex items-center gap-2 flex-wrap">
           <ImmersiveEffectsPanel audioId={audio.id} isPlaying={isPlaying && isActive} allowEffects={audio.allowImmersiveEffects} />
+          <VoiceSelectorPanel audioElement={audioRef.current} audioId={audio.id} />
         </div>
 
         {/* Player controls */}
@@ -178,7 +186,22 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
             <span>{formatTime(currentTime)}</span>
             <span>{formatTime(duration)}</span>
           </div>
-          <div className="flex items-center justify-center gap-6">
+          <div className="flex items-center justify-center gap-5">
+            {/* Repeat */}
+            <button
+              onClick={cycleRepeat}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                repeatMode !== 'none' ? 'bg-primary/15 text-primary' : 'bg-secondary/80 text-secondary-foreground'
+              }`}
+            >
+              {repeatMode === 'one' ? (
+                <Repeat1 className="w-4 h-4" />
+              ) : (
+                <Repeat className={`w-4 h-4 ${repeatMode === 'loop' ? 'text-primary' : ''}`} />
+              )}
+            </button>
+
+            {/* Play/Pause */}
             <button
               onClick={togglePlay}
               className="w-14 h-14 rounded-full flex items-center justify-center gold-glow transition-transform active:scale-95"
@@ -186,10 +209,18 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
             >
               {isPlaying ? <Pause className="w-6 h-6 text-primary-foreground" /> : <Play className="w-6 h-6 text-primary-foreground ml-0.5" />}
             </button>
-            <button onClick={onNext} className="w-10 h-10 rounded-full bg-secondary/80 flex items-center justify-center shadow-sm">
-              <SkipForward className="w-5 h-5 text-secondary-foreground" />
+
+            {/* Next */}
+            <button onClick={onNext} className="w-9 h-9 rounded-full bg-secondary/80 flex items-center justify-center shadow-sm">
+              <SkipForward className="w-4 h-4 text-secondary-foreground" />
             </button>
           </div>
+          {/* Repeat label */}
+          {repeatMode !== 'none' && (
+            <p className="text-center text-[10px] text-primary font-medium">
+              {repeatMode === 'one' ? 'Repetir una vez' : 'Repetir en bucle'}
+            </p>
+          )}
         </div>
       </div>
 
