@@ -31,6 +31,13 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
         <AudioVisualizer isPlaying={isPlaying && isActive} effect={audio.visualEffect} />
       </div>
 
+      {/* Follow button - top right, above side actions */}
+      <div className="absolute right-3 top-4 z-20">
+        <button className="text-[10px] px-2.5 py-1 rounded-full border border-primary/40 text-primary hover:bg-primary/10 transition-colors font-medium bg-card/60 backdrop-blur-sm">
+          Seguir
+        </button>
+      </div>
+
       {/* Content overlay */}
       <div className="relative px-4 pb-4 space-y-3">
         {/* Creator */}
@@ -40,9 +47,6 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
             <p className="text-sm font-semibold text-foreground">{audio.creatorName}</p>
             <p className="text-[10px] text-muted-foreground">{audio.category}</p>
           </div>
-          <button className="ml-auto text-xs px-3 py-1 rounded-full border border-primary/40 text-primary hover:bg-primary/10 transition-colors font-medium">
-            Seguir
-          </button>
         </div>
 
         {/* Title & verse */}
