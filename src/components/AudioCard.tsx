@@ -44,13 +44,14 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
     }
   }, [audio.id]);
 
-  // Restore voice setting
+  // Restore voice setting on mount
   useEffect(() => {
     const savedVoice = localStorage.getItem(`voxly-voice-${audio.id}`);
     if (savedVoice && audioRef.current) {
-      const { VOICES } = await import('./VoiceSelectorPanel');
-      const voice = VOICES?.find((v: any) => v.id === savedVoice);
-      if (voice) audioRef.current.playbackRate = voice.pitch;
+      import('./VoiceSelectorPanel').then(({ VOICES }) => {
+        const voice = VOICES?.find((v) => v.id === savedVoice);
+        if (voice && audioRef.current) audioRef.current.playbackRate = voice.pitch;
+      });
     }
   }, [audio.id]);
 
