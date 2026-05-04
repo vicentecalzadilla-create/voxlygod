@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Mic, Upload, Wand2, X } from 'lucide-react';
+import { Mic, Upload, Wand2, X, Sparkles, Volume2 } from 'lucide-react';
+import { EFFECTS_LIST, getAudioEffectsEngine, type EffectType } from '@/audio/AudioEffectsEngine';
 
 const visualEffects = [
   { id: 'light-rays', label: 'Rayos de luz', emoji: '✨' },
@@ -18,12 +19,31 @@ const CreatePage = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [hasAudio, setHasAudio] = useState(false);
   const [allowVoiceChange, setAllowVoiceChange] = useState(true);
+  const [allowImmersive, setAllowImmersive] = useState(true);
+  const [previewEffect, setPreviewEffect] = useState<EffectType>('none');
+  const [isPreviewing, setIsPreviewing] = useState(false);
+
+  const engine = getAudioEffectsEngine();
 
   const addTag = () => {
     if (tagInput.trim() && tags.length < 5) {
       setTags([...tags, tagInput.trim()]);
       setTagInput('');
     }
+  };
+
+  const handlePreviewEffect = (effect: EffectType) => {
+    setPreviewEffect(effect);
+    if (isPreviewing) {
+      engine.stop();
+    }
+    setIsPreviewing(true);
+    engine.applyEffect(effect);
+    engine.play();
+    setTimeout(() => {
+      engine.stop();
+      setIsPreviewing(false);
+    }, 2500);
   };
 
   return (
@@ -140,18 +160,83 @@ const CreatePage = () => {
         </div>
       </div>
 
-      {/* Options */}
-      <div className="flex items-center justify-between p-3 rounded-xl card-luminous">
-        <div>
-          <p className="text-xs font-medium">Permitir cambio de voz</p>
-          <p className="text-[10px] text-muted-foreground">Los oyentes pueden elegir otra voz IA</p>
+      {/* Immersive Effects Preview (Creator) */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-accent" />
+          <label className="text-xs font-medium text-foreground">Previsualizar efectos inmersivos</label>
         </div>
-        <button
-          onClick={() => setAllowVoiceChange(!allowVoiceChange)}
-          className={`w-10 h-6 rounded-full transition-colors relative ${allowVoiceChange ? 'bg-primary' : 'bg-secondary'}`}
-        >
-          <div className={`w-4 h-4 rounded-full bg-primary-foreground absolute top-1 transition-all ${allowVoiceChange ? 'left-5' : 'left-1'}`} />
-        </button>
+        <p className="text-[10px] text-muted-foreground">Escucha cómo sonaría tu audio con cada efecto.</p>
+
+        {isPreviewing && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-accent/10 border border-accent/20">
+            <Volume2 className="w-4 h-4 text-accent animate-pulse-glow" />
+            <span className="text-[10px] text-accent font-medium">
+              {EFFECTS_LIST.find(e => e.id === previewEffect)?.label}...
+            </span>
+            <div className="flex gap-[2px] ml-auto">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="w-[3px] rounded-full bg-accent animate-wave"
+                  style={{ height: `${6 + Math.random() * 8}px`, animationDelay: `${i * 0.12}s` }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-4 gap-1.5">
+          {EFFECTS_LIST.map(effect => (
+            <button
+              key={effect.id}
+              onClick={() => handlePreviewEffect(effect.id)}
+              className={`py-2.5 px-1 rounded-xl flex flex-col items-center gap-1 transition-all ${
+                previewEffect === effect.id && isPreviewing
+                  ? 'ring-1 ring-accent magic-glow'
+                  : 'bg-card/60 hover:bg-card/80'
+              }`}
+              style={previewEffect === effect.id && isPreviewing ? {
+                background: 'linear-gradient(135deg, hsl(270 50% 65% / 0.12), hsl(38 80% 55% / 0.08))'
+              } : undefined}
+            >
+              <span className="text-base">{effect.emoji}</span>
+              <span className="text-[8px] font-medium text-center leading-tight">{effect.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Options */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between p-3 rounded-xl card-luminous">
+          <div>
+            <p className="text-xs font-medium">Permitir cambio de voz</p>
+            <p className="text-[10px] text-muted-foreground">Los oyentes pueden elegir otra voz IA</p>
+          </div>
+          <button
+            onClick={() => setAllowVoiceChange(!allowVoiceChange)}
+            className={`w-10 h-6 rounded-full transition-colors relative ${allowVoiceChange ? 'bg-primary' : 'bg-secondary'}`}
+          >
+            <div className={`w-4 h-4 rounded-full bg-primary-foreground absolute top-1 transition-all ${allowVoiceChange ? 'left-5' : 'left-1'}`} />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between p-3 rounded-xl card-luminous">
+          <div>
+            <p className="text-xs font-medium flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-accent" />
+              Permitir efectos inmersivos
+            </p>
+            <p className="text-[10px] text-muted-foreground">Los oyentes pueden aplicar efectos de audio</p>
+          </div>
+          <button
+            onClick={() => setAllowImmersive(!allowImmersive)}
+            className={`w-10 h-6 rounded-full transition-colors relative ${allowImmersive ? 'bg-accent' : 'bg-secondary'}`}
+          >
+            <div className={`w-4 h-4 rounded-full bg-primary-foreground absolute top-1 transition-all ${allowImmersive ? 'left-5' : 'left-1'}`} />
+          </button>
+        </div>
       </div>
 
       {/* AI suggest */}

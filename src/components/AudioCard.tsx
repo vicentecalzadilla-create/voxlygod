@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Heart, MessageCircle, Share2, Bookmark, Play, Pause, SkipForward } from 'lucide-react';
 import type { AudioPost } from '@/data/mockData';
 import AudioVisualizer from './AudioVisualizer';
+import ImmersiveEffectsPanel from './ImmersiveEffectsPanel';
 import { useTheme } from '@/contexts/ThemeContext';
 
 interface AudioCardProps {
@@ -65,6 +66,11 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
           {audio.tags.map(tag => (
             <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full bg-secondary/80 text-secondary-foreground">#{tag}</span>
           ))}
+        </div>
+
+        {/* Immersive Effects */}
+        <div className="flex items-center gap-2">
+          <ImmersiveEffectsPanel audioId={audio.id} isPlaying={isPlaying && isActive} allowEffects={audio.allowImmersiveEffects} />
         </div>
 
         {/* Player controls */}
