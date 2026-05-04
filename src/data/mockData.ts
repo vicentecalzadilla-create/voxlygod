@@ -52,6 +52,7 @@ export const mockAudios: AudioPost[] = [
     visualEffect: 'light-rays',
     isLiked: false,
     isSaved: false,
+    allowImmersiveEffects: true,
   },
   {
     id: '2',
@@ -68,6 +69,7 @@ export const mockAudios: AudioPost[] = [
     visualEffect: 'clouds',
     isLiked: true,
     isSaved: false,
+    allowImmersiveEffects: true,
   },
   {
     id: '3',
@@ -85,6 +87,7 @@ export const mockAudios: AudioPost[] = [
     visualEffect: 'cross',
     isLiked: false,
     isSaved: true,
+    allowImmersiveEffects: true,
   },
   {
     id: '4',
@@ -101,6 +104,7 @@ export const mockAudios: AudioPost[] = [
     visualEffect: 'candles',
     isLiked: false,
     isSaved: false,
+    allowImmersiveEffects: true,
   },
   {
     id: '5',
@@ -118,6 +122,7 @@ export const mockAudios: AudioPost[] = [
     visualEffect: 'bible',
     isLiked: true,
     isSaved: true,
+    allowImmersiveEffects: true,
   },
 ];
 
