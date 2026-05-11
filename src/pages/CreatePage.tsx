@@ -154,7 +154,14 @@ const CreatePage = () => {
         return;
       }
 
-      const ext = audioBlob.type.includes('webm') ? 'webm' : audioBlob.type.includes('mpeg') ? 'mp3' : 'audio';
+      const t = audioBlob.type;
+      const ext = t.includes('webm') ? 'webm'
+        : t.includes('mpeg') || t.includes('mp3') ? 'mp3'
+        : t.includes('ogg') ? 'ogg'
+        : t.includes('wav') ? 'wav'
+        : t.includes('m4a') || t.includes('mp4') ? 'm4a'
+        : t.includes('aac') ? 'aac'
+        : 'webm';
       const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const { error: upErr } = await supabase.storage.from('audios').upload(fileName, audioBlob, {
         contentType: audioBlob.type || 'audio/webm',
