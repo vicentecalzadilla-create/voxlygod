@@ -16,13 +16,12 @@ interface AudioCardProps {
   onNext: () => void;
 }
 
-type RepeatMode = 'none' | 'one' | 'loop';
-
 const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext }: AudioCardProps) => {
   const [liked, setLiked] = useState(audio.isLiked);
   const [saved, setSaved] = useState(audio.isSaved);
   const { theme } = useTheme();
   const playback = useAudioPlayback();
+  const { playTrack, toggleTrack, cycleRepeatMode } = playback;
   const isCurrent = playback.currentTrackId === audio.id;
   const isPlaying = isCurrent && playback.isPlaying;
   const currentTime = isCurrent ? playback.currentTime : 0;
@@ -34,9 +33,9 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext }:
 
   useEffect(() => {
     if (isActive && autoPlay && playSignal > 0) {
-      playback.playTrack(audio).catch(() => {});
+      playTrack(audio).catch(() => {});
     }
-  }, [audio, autoPlay, isActive, playSignal, playback]);
+  }, [audio, autoPlay, isActive, playSignal, playTrack]);
 
   useEffect(() => {
     if (isActive && playback.endedTrackId === audio.id && playback.endedSignal > 0) {
@@ -44,10 +43,10 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext }:
     }
   }, [audio.id, isActive, onNext, playback.endedSignal, playback.endedTrackId]);
 
-  const togglePlay = () => playback.toggleTrack(audio).catch(() => {});
+  const togglePlay = () => toggleTrack(audio).catch(() => {});
 
   const cycleRepeat = () => {
-    playback.cycleRepeatMode(audio.id);
+    cycleRepeatMode(audio.id);
   };
 
   const bgGradient = theme === 'dark'
