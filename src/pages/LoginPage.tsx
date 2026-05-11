@@ -19,7 +19,8 @@ const LoginPage = () => {
       redirect_uri: `${window.location.origin}/create`,
     });
     if (error) {
-      toast({ title: 'No se pudo iniciar sesión', description: error.message, variant: 'destructive' });
+      console.error(error);
+      toast({ title: 'No se pudo iniciar sesión', description: 'Inténtalo de nuevo.', variant: 'destructive' });
       setLoading(false);
     }
   };
@@ -38,7 +39,14 @@ const LoginPage = () => {
 
     setLoading(false);
     if (result.error) {
-      toast({ title: 'No se pudo entrar', description: result.error.message, variant: 'destructive' });
+      console.error(result.error);
+      const raw = result.error.message || '';
+      const msg = /invalid login|invalid credentials/i.test(raw)
+        ? 'Credenciales incorrectas.'
+        : /already registered|already exists/i.test(raw)
+        ? 'Esta cuenta ya existe. Inicia sesión.'
+        : 'No se pudo iniciar sesión. Inténtalo de nuevo.';
+      toast({ title: 'No se pudo entrar', description: msg, variant: 'destructive' });
       return;
     }
 
