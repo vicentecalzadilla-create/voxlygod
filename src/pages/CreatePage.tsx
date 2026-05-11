@@ -285,6 +285,7 @@ const CreatePage = () => {
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          maxLength={2000}
           placeholder="Describe tu audio..."
           rows={3}
           className="w-full px-3 py-2 rounded-xl bg-card/80 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none shadow-sm"
