@@ -18,6 +18,7 @@ interface AudioPlaybackContextValue {
   toggleTrack: (track: AudioPost) => Promise<void>;
   getRepeatMode: (trackId: string) => RepeatMode;
   cycleRepeatMode: (trackId: string) => RepeatMode;
+  seekTo: (trackId: string, time: number) => void;
 }
 
 const AudioPlaybackContext = createContext<AudioPlaybackContextValue | null>(null);
