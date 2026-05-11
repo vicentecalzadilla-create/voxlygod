@@ -108,14 +108,66 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext }:
 
         {/* Player controls */}
         <div className="space-y-2">
-          <div className="relative h-1.5 bg-secondary rounded-full overflow-hidden">
-            <div
-              className="absolute h-full rounded-full transition-all duration-300"
-              style={{
-                width: `${progress}%`,
-                background: 'linear-gradient(90deg, hsl(38 80% 55%), hsl(340 60% 70%), hsl(270 50% 65%))'
-              }}
-            />
+          <div
+            role="slider"
+            aria-label="Posición del audio"
+            aria-valuemin={0}
+            aria-valuemax={Math.max(1, Math.floor(duration))}
+            aria-valuenow={Math.floor(currentTime)}
+            tabIndex={0}
+            className="relative h-6 flex items-center cursor-pointer touch-none select-none group"
+            onPointerDown={(e) => {
+              const target = e.currentTarget;
+              target.setPointerCapture(e.pointerId);
+              const updateFromEvent = (clientX: number) => {
+                const rect = target.getBoundingClientRect();
+                const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+                const t = ratio * (duration || 0);
+                setScrubTime(t);
+              };
+              setScrubbing(true);
+              if (!isCurrent) {
+                playTrack(audio).catch(() => {});
+              }
+              updateFromEvent(e.clientX);
+              const onMove = (ev: PointerEvent) => updateFromEvent(ev.clientX);
+              const onUp = (ev: PointerEvent) => {
+                updateFromEvent(ev.clientX);
+                target.removeEventListener('pointermove', onMove);
+                target.removeEventListener('pointerup', onUp);
+                target.removeEventListener('pointercancel', onUp);
+                const rect = target.getBoundingClientRect();
+                const ratio = Math.min(1, Math.max(0, (ev.clientX - rect.left) / rect.width));
+                seekTo(audio.id, ratio * (duration || 0));
+                setScrubbing(false);
+              };
+              target.addEventListener('pointermove', onMove);
+              target.addEventListener('pointerup', onUp);
+              target.addEventListener('pointercancel', onUp);
+            }}
+            onKeyDown={(e) => {
+              if (!duration) return;
+              const step = e.shiftKey ? 10 : 5;
+              if (e.key === 'ArrowRight') seekTo(audio.id, Math.min(duration, currentTime + step));
+              if (e.key === 'ArrowLeft') seekTo(audio.id, Math.max(0, currentTime - step));
+            }}
+          >
+            <div className="relative h-1.5 w-full bg-secondary rounded-full overflow-visible">
+              <div
+                className="absolute top-0 left-0 h-full rounded-full"
+                style={{
+                  width: `${progress}%`,
+                  background: 'linear-gradient(90deg, hsl(38 80% 55%), hsl(340 60% 70%), hsl(270 50% 65%))'
+                }}
+              />
+              <div
+                className="absolute top-1/2 w-4 h-4 -translate-y-1/2 -translate-x-1/2 rounded-full border-2 border-background shadow-md transition-transform group-hover:scale-110 active:scale-125"
+                style={{
+                  left: `${progress}%`,
+                  background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))'
+                }}
+              />
+            </div>
           </div>
           <div className="flex items-center justify-between text-[10px] text-muted-foreground">
             <span>{formatTime(currentTime)}</span>
