@@ -48,7 +48,7 @@ const DiscoverPage = () => {
                 <p className="text-sm font-medium truncate">{audio.title}</p>
                 <p className="text-[10px] text-muted-foreground">{audio.creatorName} · {Math.floor(audio.duration / 60)} min</p>
               </div>
-              <span className="text-[10px] text-muted-foreground">{audio.likes.toLocaleString()} ❤</span>
+              <span className="text-[10px] text-muted-foreground">{audio.likes.toLocaleString()} 🙏 Amén</span>
             </div>
           ))}
         </div>

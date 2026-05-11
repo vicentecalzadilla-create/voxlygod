@@ -1,4 +1,4 @@
-import { Settings, Heart, Bookmark, Clock, LogOut, ChevronRight, Sun, Moon } from 'lucide-react';
+import { Settings, Bookmark, Clock, LogOut, ChevronRight, Sun, Moon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -87,7 +87,7 @@ const ProfilePage = () => {
       {/* Menu */}
       <div className="space-y-1">
         {[
-          { icon: Heart, label: 'Mis favoritos', count: '43' },
+          { icon: () => <span className="text-lg">🙏</span>, label: 'Mis Amén', count: '43' },
           { icon: Bookmark, label: 'Guardados', count: '156' },
           { icon: Clock, label: 'Historial', count: '' },
         ].map(({ icon: Icon, label, count }) => (
