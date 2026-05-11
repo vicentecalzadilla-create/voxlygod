@@ -119,8 +119,9 @@ const CreatePage = () => {
   };
 
   const addTag = () => {
-    if (tagInput.trim() && tags.length < 5) {
-      setTags([...tags, tagInput.trim()]);
+    const v = tagInput.trim().slice(0, 50);
+    if (v && tags.length < 5) {
+      setTags([...tags, v]);
       setTagInput('');
     }
   };
