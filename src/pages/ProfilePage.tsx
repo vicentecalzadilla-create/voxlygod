@@ -1,4 +1,4 @@
-import { Settings, Heart, Bookmark, Clock, LogOut, ChevronRight, Sun, Moon } from 'lucide-react';
+import { Settings, Bookmark, Clock, LogOut, ChevronRight, Sun, Moon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -87,12 +87,16 @@ const ProfilePage = () => {
       {/* Menu */}
       <div className="space-y-1">
         {[
-          { icon: Heart, label: 'Mis favoritos', count: '43' },
+          { icon: null, emoji: '🙏', label: 'Mis Amén', count: '43' },
           { icon: Bookmark, label: 'Guardados', count: '156' },
           { icon: Clock, label: 'Historial', count: '' },
-        ].map(({ icon: Icon, label, count }) => (
+        ].map(({ icon: Icon, emoji, label, count }) => (
           <button key={label} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-card/60 transition-colors">
-            <Icon className="w-5 h-5 text-primary" />
+            {emoji ? (
+              <span className="w-5 h-5 flex items-center justify-center text-lg text-primary leading-none">{emoji}</span>
+            ) : (
+              <Icon className="w-5 h-5 text-primary" />
+            )}
             <span className="text-sm font-medium flex-1 text-left">{label}</span>
             {count && <span className="text-xs text-muted-foreground">{count}</span>}
             <ChevronRight className="w-4 h-4 text-muted-foreground" />

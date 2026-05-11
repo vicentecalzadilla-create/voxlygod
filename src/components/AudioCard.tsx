@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Heart, MessageCircle, Share2, Bookmark, Play, Pause, SkipForward, Repeat, Repeat1 } from 'lucide-react';
+import { MessageCircle, Share2, Bookmark, Play, Pause, SkipForward, Repeat, Repeat1 } from 'lucide-react';
 import type { AudioPost } from '@/data/mockData';
 import AudioVisualizer from './AudioVisualizer';
 import ImmersiveEffectsPanel from './ImmersiveEffectsPanel';
@@ -17,7 +17,7 @@ interface AudioCardProps {
 }
 
 const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext }: AudioCardProps) => {
-  const [liked, setLiked] = useState(audio.isLiked);
+  const [amen, setAmen] = useState(audio.isLiked);
   const [saved, setSaved] = useState(audio.isSaved);
   const { theme } = useTheme();
   const playback = useAudioPlayback();
@@ -211,11 +211,16 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext }:
         </div>
       </div>
 
-      {/* Side actions */}
+        {/* Side actions */}
       <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-5 items-center">
-        <button onClick={() => setLiked(!liked)} className="flex flex-col items-center gap-0.5">
-          <Heart className={`w-6 h-6 transition-colors ${liked ? 'fill-rose text-rose' : 'text-foreground/50'}`} />
-          <span className="text-[10px] text-foreground/70">{(audio.likes + (liked ? 1 : 0)).toLocaleString()}</span>
+        <button onClick={() => setAmen(!amen)} className="flex flex-col items-center gap-0.5 group">
+          <span
+            className={`text-xl transition-all duration-300 ${amen ? 'scale-110' : 'opacity-70 grayscale group-hover:opacity-100 group-hover:grayscale-0'}`}
+            style={amen ? { filter: 'drop-shadow(0 0 6px hsl(var(--primary) / 0.6))' } : undefined}
+          >🙏</span>
+          <span className={`text-[10px] transition-colors ${amen ? 'text-primary font-semibold' : 'text-foreground/70'}`}>
+            {(audio.likes + (amen ? 1 : 0)).toLocaleString()} Amén
+          </span>
         </button>
         <button className="flex flex-col items-center gap-0.5">
           <MessageCircle className="w-6 h-6 text-foreground/50" />
