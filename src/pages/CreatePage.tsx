@@ -300,6 +300,7 @@ const CreatePage = () => {
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addTag()}
+            maxLength={50}
             placeholder="Ej: Fe, Salmos..."
             className="flex-1 h-10 px-3 rounded-xl bg-card/80 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
           />
