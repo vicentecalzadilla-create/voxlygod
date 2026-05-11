@@ -194,6 +194,23 @@ export const AudioPlaybackProvider = ({ children }: { children: ReactNode }) => 
     return next;
   }, []);
 
+  const seekTo = useCallback((trackId: string, time: number) => {
+    const audio = audioRef.current;
+    const safeTime = Math.max(0, time);
+    positionsRef.current[trackId] = safeTime;
+    if (audio && currentTrackRef.current?.id === trackId) {
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        audio.currentTime = Math.min(safeTime, audio.duration - 0.05);
+      } else {
+        pendingSeekRef.current = safeTime;
+      }
+      setCurrentTime(audio.currentTime);
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        setProgress((audio.currentTime / audio.duration) * 100);
+      }
+    }
+  }, []);
+
   const value = useMemo<AudioPlaybackContextValue>(() => ({
     audioElement: playerElement,
     currentTrackId,
@@ -208,7 +225,8 @@ export const AudioPlaybackProvider = ({ children }: { children: ReactNode }) => 
     toggleTrack,
     getRepeatMode,
     cycleRepeatMode,
-  }), [playerElement, currentTrackId, isPlaying, currentTime, duration, progress, endedTrackId, endedSignal, repeatVersion, playTrack, pause, toggleTrack, getRepeatMode, cycleRepeatMode]);
+    seekTo,
+  }), [playerElement, currentTrackId, isPlaying, currentTime, duration, progress, endedTrackId, endedSignal, repeatVersion, playTrack, pause, toggleTrack, getRepeatMode, cycleRepeatMode, seekTo]);
 
   return <AudioPlaybackContext.Provider value={value}>{children}</AudioPlaybackContext.Provider>;
 };
