@@ -273,6 +273,7 @@ const CreatePage = () => {
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          maxLength={200}
           placeholder="Ej: Reflexión sobre el amor de Dios"
           className="w-full h-11 px-3 rounded-xl bg-card/80 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
         />
