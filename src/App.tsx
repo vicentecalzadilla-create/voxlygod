@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { AudioPlaybackProvider } from "@/audio/AudioPlaybackContext";
 import BottomNav from "@/components/BottomNav";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import FeedPage from "./pages/FeedPage";
@@ -23,18 +24,20 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <div className="max-w-lg mx-auto relative min-h-screen">
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/" element={<FeedPage />} />
-              <Route path="/discover" element={<DiscoverPage />} />
-              <Route path="/create" element={<ProtectedRoute><CreatePage /></ProtectedRoute>} />
-              <Route path="/playlists" element={<ProtectedRoute><PlaylistsPage /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <BottomNav />
-          </div>
+          <AudioPlaybackProvider>
+            <div className="max-w-lg mx-auto relative min-h-screen">
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/" element={<FeedPage />} />
+                <Route path="/discover" element={<DiscoverPage />} />
+                <Route path="/create" element={<ProtectedRoute><CreatePage /></ProtectedRoute>} />
+                <Route path="/playlists" element={<ProtectedRoute><PlaylistsPage /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <BottomNav />
+            </div>
+          </AudioPlaybackProvider>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
