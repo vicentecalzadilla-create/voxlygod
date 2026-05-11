@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ToggleLeft, ToggleRight } from 'lucide-react';
 import { mockAudios, categories } from '@/data/mockData';
 import AudioCard from '@/components/AudioCard';
