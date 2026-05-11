@@ -28,7 +28,7 @@ export const AudioPlaybackProvider = ({ children }: { children: ReactNode }) => 
   const currentTrackRef = useRef<AudioPost | null>(null);
   const pendingSeekRef = useRef(0);
   const repeatModesRef = useRef<Record<string, RepeatMode>>({});
-  const [, forceRepeatRender] = useState(0);
+  const [repeatVersion, setRepeatVersion] = useState(0);
   const [currentTrackId, setCurrentTrackId] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -77,7 +77,7 @@ export const AudioPlaybackProvider = ({ children }: { children: ReactNode }) => 
       if (repeatMode === 'loop' || repeatMode === 'one') {
         if (repeatMode === 'one') {
           repeatModesRef.current[track.id] = 'none';
-          forceRepeatRender(value => value + 1);
+          setRepeatVersion(value => value + 1);
         }
         audio.currentTime = 0;
         positionsRef.current[track.id] = 0;
@@ -186,7 +186,7 @@ export const AudioPlaybackProvider = ({ children }: { children: ReactNode }) => 
     const current = repeatModesRef.current[trackId] || 'none';
     const next: RepeatMode = current === 'none' ? 'one' : current === 'one' ? 'loop' : 'none';
     repeatModesRef.current[trackId] = next;
-    forceRepeatRender(value => value + 1);
+    setRepeatVersion(value => value + 1);
     return next;
   }, []);
 
@@ -204,7 +204,7 @@ export const AudioPlaybackProvider = ({ children }: { children: ReactNode }) => 
     toggleTrack,
     getRepeatMode,
     cycleRepeatMode,
-  }), [currentTrackId, isPlaying, currentTime, duration, progress, endedTrackId, endedSignal, playTrack, pause, toggleTrack, getRepeatMode, cycleRepeatMode]);
+  }), [currentTrackId, isPlaying, currentTime, duration, progress, endedTrackId, endedSignal, repeatVersion, playTrack, pause, toggleTrack, getRepeatMode, cycleRepeatMode]);
 
   return <AudioPlaybackContext.Provider value={value}>{children}</AudioPlaybackContext.Provider>;
 };
