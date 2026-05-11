@@ -297,7 +297,7 @@ class AudioEffectsEngine {
     analyser.fftSize = 128;
     analyser.smoothingTimeConstant = 0.82;
     this.analyserNode = analyser;
-    this.analyserData = new Uint8Array(analyser.frequencyBinCount);
+    this.analyserData = new Uint8Array(analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>;
     lastNode.connect(analyser);
     analyser.connect(ctx.destination);
   }
