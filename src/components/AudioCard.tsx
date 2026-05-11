@@ -214,8 +214,11 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext }:
         {/* Side actions */}
       <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-5 items-center">
         <button onClick={() => setAmen(!amen)} className="flex flex-col items-center gap-0.5 group">
-          <span className={`text-xl transition-all duration-300 ${amen ? 'gold-glow scale-110' : 'opacity-70 grayscale group-hover:opacity-100 group-hover:grayscale-0'}`}>🙏</span>
-          <span className={`text-[10px] transition-colors ${amen ? 'text-primary font-semibold gold-glow' : 'text-foreground/70'}`}>
+          <span
+            className={`text-xl transition-all duration-300 ${amen ? 'scale-110' : 'opacity-70 grayscale group-hover:opacity-100 group-hover:grayscale-0'}`}
+            style={amen ? { filter: 'drop-shadow(0 0 6px hsl(var(--primary) / 0.6))' } : undefined}
+          >🙏</span>
+          <span className={`text-[10px] transition-colors ${amen ? 'text-primary font-semibold' : 'text-foreground/70'}`}>
             {(audio.likes + (amen ? 1 : 0)).toLocaleString()} Amén
           </span>
         </button>
