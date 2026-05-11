@@ -36,7 +36,7 @@ class AudioEffectsEngine {
   private noiseSource: AudioBufferSourceNode | null = null;
   private lfoNode: OscillatorNode | null = null;
   private analyserNode: AnalyserNode | null = null;
-  private analyserData: Uint8Array | null = null;
+  private analyserData: Uint8Array<ArrayBuffer> | null = null;
 
   private getContext(): AudioContext {
     if (!this.ctx || this.ctx.state === 'closed') {
