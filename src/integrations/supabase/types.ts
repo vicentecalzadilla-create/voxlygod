@@ -31,7 +31,7 @@ export type Database = {
           shares: number | null
           tags: string[] | null
           title: string
-          user_id: string | null
+          user_id: string
           verse: string | null
           visual_effect: string | null
         }
@@ -51,7 +51,7 @@ export type Database = {
           shares?: number | null
           tags?: string[] | null
           title: string
-          user_id?: string | null
+          user_id: string
           verse?: string | null
           visual_effect?: string | null
         }
@@ -71,7 +71,7 @@ export type Database = {
           shares?: number | null
           tags?: string[] | null
           title?: string
-          user_id?: string | null
+          user_id?: string
           verse?: string | null
           visual_effect?: string | null
         }
