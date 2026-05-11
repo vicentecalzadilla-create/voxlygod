@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { AudioPost } from '@/data/mockData';
-import { getAudioEffectsEngine } from '@/audio/AudioEffectsEngine';
+import { getAudioEffectsEngine, type EffectType } from '@/audio/AudioEffectsEngine';
 
 type RepeatMode = 'none' | 'one' | 'loop';
 
@@ -132,7 +132,7 @@ export const AudioPlaybackProvider = ({ children }: { children: ReactNode }) => 
     try {
       const engine = getAudioEffectsEngine();
       engine.connectAudio(audio);
-      engine.applyEffect((localStorage.getItem(`voxly-effect-${trackId}`) as never) || 'none');
+      engine.applyEffect((localStorage.getItem(`voxly-effect-${trackId}`) as EffectType | null) || 'none');
       engine.resume();
     } catch (error) {
       console.warn('Could not connect audio effects:', error);
