@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { getAudioEffectsEngine } from '@/audio/AudioEffectsEngine';
 
 interface AudioVisualizerProps {
   isPlaying: boolean;
@@ -24,7 +25,39 @@ const barColors = [
 ];
 
 const AudioVisualizer = ({ isPlaying, effect }: AudioVisualizerProps) => {
-  const [bars] = useState(() => Array.from({ length: 40 }, () => Math.random()));
+  const bars = useMemo(() => Array.from({ length: 40 }, (_, i) => ({
+    height: 0.25 + ((i * 17) % 31) / 40,
+    speed: 0.8 + ((i * 7) % 8) / 10,
+  })), []);
+  const particles = useMemo(() => Array.from({ length: 20 }, (_, i) => ({
+    size: 2 + ((i * 11) % 4),
+    left: 10 + ((i * 23) % 80),
+    top: 10 + ((i * 31) % 80),
+    duration: 2 + ((i * 5) % 3),
+    drift: 4 + ((i * 7) % 5),
+    delay: (i % 6) * 0.45,
+  })), []);
+  const stars = useMemo(() => Array.from({ length: 8 }, (_, i) => ({
+    left: 5 + ((i * 29) % 90),
+    top: 5 + ((i * 37) % 90),
+    size: 6 + ((i * 5) % 10),
+    delay: (i % 5) * 0.6,
+  })), []);
+  const [level, setLevel] = useState(0);
+
+  useEffect(() => {
+    if (!isPlaying) {
+      setLevel(0);
+      return;
+    }
+    let frame = 0;
+    const tick = () => {
+      setLevel(getAudioEffectsEngine().getLevel());
+      frame = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => cancelAnimationFrame(frame);
+  }, [isPlaying]);
 
   return (
     <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointillist-bg">
@@ -35,18 +68,21 @@ const AudioVisualizer = ({ isPlaying, effect }: AudioVisualizerProps) => {
         style={{ background: 'radial-gradient(circle, hsl(200 70% 70% / 0.2), hsl(270 50% 68% / 0.1), transparent 70%)', animationDelay: '1.5s' }} />
 
       {/* Sparkle particles */}
-      {isPlaying && Array.from({ length: 20 }).map((_, i) => (
+      {isPlaying && particles.map((particle, i) => (
         <div
           key={i}
           className="absolute rounded-full"
           style={{
-            width: `${2 + Math.random() * 4}px`,
-            height: `${2 + Math.random() * 4}px`,
+            width: `${particle.size}px`,
+            height: `${particle.size}px`,
             backgroundColor: particleColors[i % particleColors.length],
-            left: `${10 + Math.random() * 80}%`,
-            top: `${10 + Math.random() * 80}%`,
-            animation: `sparkle ${2 + Math.random() * 3}s ease-in-out infinite, drift ${4 + Math.random() * 5}s ease-in-out infinite`,
-            animationDelay: `${Math.random() * 3}s`,
+            left: `${particle.left}%`,
+            top: `${particle.top}%`,
+            animationName: 'sparkle, drift',
+            animationDuration: `${particle.duration}s, ${particle.drift}s`,
+            animationTimingFunction: 'ease-in-out, ease-in-out',
+            animationIterationCount: 'infinite, infinite',
+            animationDelay: `${particle.delay}s, ${particle.delay}s`,
             filter: 'blur(0.5px)',
             boxShadow: `0 0 6px ${particleColors[i % particleColors.length]}`,
           }}
@@ -54,16 +90,19 @@ const AudioVisualizer = ({ isPlaying, effect }: AudioVisualizerProps) => {
       ))}
 
       {/* Stars */}
-      {isPlaying && Array.from({ length: 8 }).map((_, i) => (
+      {isPlaying && stars.map((star, i) => (
         <div
           key={`star-${i}`}
           className="absolute text-gold/60"
           style={{
-            left: `${5 + Math.random() * 90}%`,
-            top: `${5 + Math.random() * 90}%`,
-            fontSize: `${6 + Math.random() * 10}px`,
-            animation: `sparkle ${3 + Math.random() * 2}s ease-in-out infinite`,
-            animationDelay: `${Math.random() * 4}s`,
+            left: `${star.left}%`,
+            top: `${star.top}%`,
+            fontSize: `${star.size}px`,
+            animationName: 'sparkle',
+            animationDuration: `${3 + (i % 2)}s`,
+            animationTimingFunction: 'ease-in-out',
+            animationIterationCount: 'infinite',
+            animationDelay: `${star.delay}s`,
           }}
         >
           ✦
@@ -82,17 +121,21 @@ const AudioVisualizer = ({ isPlaying, effect }: AudioVisualizerProps) => {
 
       {/* Audio bars - multicolor pointillist */}
       <div className="relative flex items-end gap-[2px] h-28">
-        {bars.map((h, i) => {
+        {bars.map((bar, i) => {
           const colorIdx = i % barColors.length;
+          const reactiveHeight = 8 + bar.height * 44 + level * (24 + (i % 7) * 7);
           return (
             <div
               key={i}
               className={`w-[3px] rounded-full bg-gradient-to-t ${barColors[colorIdx]} transition-all`}
               style={{
-                height: isPlaying ? `${20 + h * 88}px` : '8px',
-                animation: isPlaying ? `wave ${0.8 + Math.random() * 0.8}s ease-in-out infinite` : 'none',
+                height: isPlaying ? `${Math.min(108, reactiveHeight)}px` : '8px',
+                animationName: isPlaying ? 'wave' : 'none',
+                animationDuration: `${bar.speed}s`,
+                animationTimingFunction: 'ease-in-out',
+                animationIterationCount: 'infinite',
                 animationDelay: `${i * 0.05}s`,
-                opacity: isPlaying ? 0.65 + h * 0.35 : 0.2,
+                opacity: isPlaying ? 0.65 + bar.height * 0.35 : 0.2,
                 filter: isPlaying ? `drop-shadow(0 0 3px ${particleColors[i % particleColors.length]})` : 'none',
               }}
             />

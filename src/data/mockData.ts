@@ -36,9 +36,9 @@ export interface Playlist {
   creator: string;
 }
 
-// Same-origin sample audios (CORS-safe for Web Audio API)
+// Public sample audios (CORS-safe for Web Audio API)
 const SAMPLE_AUDIO_URLS = [
-  '/samples/salmo23.mp3',
+  'https://thenmesqqlkmrzochwts.supabase.co/storage/v1/object/public/audios/samples%2Fsalmo23.mp3',
   '/samples/oracion.mp3',
   '/samples/predicacion.mp3',
   '/samples/testimonio.mp3',
@@ -52,7 +52,7 @@ export const mockAudios: AudioPost[] = [
     description: 'Una lectura serena del Salmo 23 con reflexión sobre la paz que Dios nos da en medio de las tormentas.',
     creatorName: 'Pastor David',
     creatorAvatar: '👨‍🏫',
-    duration: 185,
+    duration: 68,
     likes: 2340,
     comments: 156,
     shares: 89,

@@ -29,11 +29,14 @@ export const EFFECTS_LIST: EffectInfo[] = [
 class AudioEffectsEngine {
   private ctx: AudioContext | null = null;
   private sourceNode: MediaElementAudioSourceNode | null = null;
+  private sourceNodes = new WeakMap<HTMLAudioElement, MediaElementAudioSourceNode>();
   private currentEffect: EffectType = 'none';
   private connectedElement: HTMLAudioElement | null = null;
   private effectNodes: AudioNode[] = [];
   private noiseSource: AudioBufferSourceNode | null = null;
   private lfoNode: OscillatorNode | null = null;
+  private analyserNode: AnalyserNode | null = null;
+  private analyserData: Uint8Array<ArrayBuffer> | null = null;
 
   private getContext(): AudioContext {
     if (!this.ctx || this.ctx.state === 'closed') {
@@ -51,7 +54,9 @@ class AudioEffectsEngine {
     if (ctx.state === 'suspended') ctx.resume();
 
     this.connectedElement = audio;
-    this.sourceNode = ctx.createMediaElementSource(audio);
+    const existingSource = this.sourceNodes.get(audio);
+    this.sourceNode = existingSource || ctx.createMediaElementSource(audio);
+    if (!existingSource) this.sourceNodes.set(audio, this.sourceNode);
     this.rebuildGraph();
   }
 
@@ -66,6 +71,9 @@ class AudioEffectsEngine {
       try { node.disconnect(); } catch {}
     }
     this.effectNodes = [];
+    try { this.analyserNode?.disconnect(); } catch {}
+    this.analyserNode = null;
+    this.analyserData = null;
 
     if (this.sourceNode) {
       try { this.sourceNode.disconnect(); } catch {}
@@ -285,7 +293,13 @@ class AudioEffectsEngine {
         break;
     }
 
-    lastNode.connect(ctx.destination);
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 128;
+    analyser.smoothingTimeConstant = 0.82;
+    this.analyserNode = analyser;
+    this.analyserData = new Uint8Array(analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>;
+    lastNode.connect(analyser);
+    analyser.connect(ctx.destination);
   }
 
   applyEffect(effect: EffectType): void {
@@ -303,6 +317,13 @@ class AudioEffectsEngine {
     if (this.ctx?.state === 'suspended') {
       this.ctx.resume();
     }
+  }
+
+  getLevel(): number {
+    if (!this.analyserNode || !this.analyserData) return 0;
+    this.analyserNode.getByteFrequencyData(this.analyserData);
+    const sum = this.analyserData.reduce((total, value) => total + value, 0);
+    return Math.min(1, sum / (this.analyserData.length * 180));
   }
 
   dispose(): void {
