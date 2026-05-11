@@ -29,6 +29,7 @@ export const AudioPlaybackProvider = ({ children }: { children: ReactNode }) => 
   const pendingSeekRef = useRef(0);
   const repeatModesRef = useRef<Record<string, RepeatMode>>({});
   const [repeatVersion, setRepeatVersion] = useState(0);
+  const [playerElement, setPlayerElement] = useState<HTMLAudioElement | null>(null);
   const [currentTrackId, setCurrentTrackId] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -42,6 +43,7 @@ export const AudioPlaybackProvider = ({ children }: { children: ReactNode }) => 
     audio.preload = 'auto';
     audio.crossOrigin = 'anonymous';
     audioRef.current = audio;
+    setPlayerElement(audio);
 
     const savePosition = () => {
       const track = currentTrackRef.current;
@@ -109,6 +111,7 @@ export const AudioPlaybackProvider = ({ children }: { children: ReactNode }) => 
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('ended', handleEnded);
       audioRef.current = null;
+      setPlayerElement(null);
     };
   }, []);
 
@@ -191,7 +194,7 @@ export const AudioPlaybackProvider = ({ children }: { children: ReactNode }) => 
   }, []);
 
   const value = useMemo<AudioPlaybackContextValue>(() => ({
-    audioElement: audioRef.current,
+    audioElement: playerElement,
     currentTrackId,
     isPlaying,
     currentTime,
@@ -204,7 +207,7 @@ export const AudioPlaybackProvider = ({ children }: { children: ReactNode }) => 
     toggleTrack,
     getRepeatMode,
     cycleRepeatMode,
-  }), [currentTrackId, isPlaying, currentTime, duration, progress, endedTrackId, endedSignal, repeatVersion, playTrack, pause, toggleTrack, getRepeatMode, cycleRepeatMode]);
+  }), [playerElement, currentTrackId, isPlaying, currentTime, duration, progress, endedTrackId, endedSignal, repeatVersion, playTrack, pause, toggleTrack, getRepeatMode, cycleRepeatMode]);
 
   return <AudioPlaybackContext.Provider value={value}>{children}</AudioPlaybackContext.Provider>;
 };
