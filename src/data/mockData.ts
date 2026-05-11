@@ -36,13 +36,13 @@ export interface Playlist {
   creator: string;
 }
 
-// Free public domain sample audio URLs for demo
+// Same-origin sample audios (CORS-safe for Web Audio API)
 const SAMPLE_AUDIO_URLS = [
-  'https://upload.wikimedia.org/wikipedia/commons/4/4b/Psalm_23_KJV.ogg',
-  'https://upload.wikimedia.org/wikipedia/commons/6/6d/Chopin_-_Nocturne_op.9_No.2.ogg',
-  'https://upload.wikimedia.org/wikipedia/commons/e/ea/Debussy_-_Clair_de_Lune.ogg',
-  'https://upload.wikimedia.org/wikipedia/commons/2/21/Beethoven_-_Moonlight_Sonata.ogg',
-  'https://upload.wikimedia.org/wikipedia/commons/c/c9/Pachelbel_-_Canon_in_D.ogg',
+  '/samples/salmo23.mp3',
+  '/samples/oracion.mp3',
+  '/samples/predicacion.mp3',
+  '/samples/testimonio.mp3',
+  '/samples/devocional.mp3',
 ];
 
 export const mockAudios: AudioPost[] = [
