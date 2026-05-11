@@ -183,7 +183,7 @@ const CreatePage = () => {
       setAudioUrl(null); setRecordSeconds(0);
     } catch (err: any) {
       console.error(err);
-      toast({ title: 'Error al publicar', description: err.message ?? 'Inténtalo de nuevo.', variant: 'destructive' });
+      toast({ title: 'Error al publicar', description: 'Inténtalo de nuevo más tarde.', variant: 'destructive' });
     } finally {
       setUploading(false);
     }

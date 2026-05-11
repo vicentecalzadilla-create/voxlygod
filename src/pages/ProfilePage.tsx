@@ -1,8 +1,22 @@
 import { Settings, Heart, Bookmark, Clock, LogOut, ChevronRight, Sun, Moon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 const ProfilePage = () => {
   const { theme, toggleTheme } = useTheme();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error(error);
+      toast({ title: 'No se pudo cerrar sesión', description: 'Inténtalo de nuevo.', variant: 'destructive' });
+      return;
+    }
+    navigate('/login');
+  };
 
   return (
     <div className="min-h-screen pb-20 pt-4 px-4 space-y-6 pointillist-bg">
@@ -102,7 +116,7 @@ const ProfilePage = () => {
       </div>
 
       {/* Logout */}
-      <button className="w-full flex items-center justify-center gap-2 p-3 rounded-xl text-destructive hover:bg-destructive/10 transition-colors text-sm">
+      <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 p-3 rounded-xl text-destructive hover:bg-destructive/10 transition-colors text-sm">
         <LogOut className="w-4 h-4" /> Cerrar sesión
       </button>
     </div>
