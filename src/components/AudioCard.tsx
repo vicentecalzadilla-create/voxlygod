@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { Heart, MessageCircle, Share2, Bookmark, Play, Pause, SkipForward, Repeat, Repeat1 } from 'lucide-react';
 import type { AudioPost } from '@/data/mockData';
 import AudioVisualizer from './AudioVisualizer';
@@ -6,7 +6,7 @@ import ImmersiveEffectsPanel from './ImmersiveEffectsPanel';
 import TranscriptionPanel from './TranscriptionPanel';
 import VoiceSelectorPanel from './VoiceSelectorPanel';
 import { useTheme } from '@/contexts/ThemeContext';
-import { getAudioEffectsEngine } from '@/audio/AudioEffectsEngine';
+import { useAudioPlayback } from '@/audio/AudioPlaybackContext';
 
 interface AudioCardProps {
   audio: AudioPost;
@@ -19,108 +19,35 @@ interface AudioCardProps {
 type RepeatMode = 'none' | 'one' | 'loop';
 
 const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext }: AudioCardProps) => {
-  const [isPlaying, setIsPlaying] = useState(false);
   const [liked, setLiked] = useState(audio.isLiked);
   const [saved, setSaved] = useState(audio.isSaved);
-  const [progress, setProgress] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(audio.duration);
-  const [repeatMode, setRepeatMode] = useState<RepeatMode>('none');
   const { theme } = useTheme();
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const connectedRef = useRef(false);
+  const playback = useAudioPlayback();
+  const isCurrent = playback.currentTrackId === audio.id;
+  const isPlaying = isCurrent && playback.isPlaying;
+  const currentTime = isCurrent ? playback.currentTime : 0;
+  const duration = isCurrent ? playback.duration || audio.duration : audio.duration;
+  const progress = isCurrent ? playback.progress : 0;
+  const repeatMode = playback.getRepeatMode(audio.id);
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60 | 0).toString().padStart(2, '0')}`;
 
-  const connectToEngine = useCallback(() => {
-    if (audioRef.current && !connectedRef.current) {
-      try {
-        const engine = getAudioEffectsEngine();
-        engine.connectAudio(audioRef.current);
-        connectedRef.current = true;
-        const savedEffect = localStorage.getItem(`voxly-effect-${audio.id}`);
-        if (savedEffect) engine.applyEffect(savedEffect as any);
-      } catch (e) {
-        console.warn('Could not connect audio to Web Audio API:', e);
-      }
-    }
-  }, [audio.id]);
-
-  // Restore voice setting on mount
-  useEffect(() => {
-    const savedVoice = localStorage.getItem(`voxly-voice-${audio.id}`);
-    if (savedVoice && audioRef.current) {
-      import('./VoiceSelectorPanel').then(({ VOICES }) => {
-        const voice = VOICES?.find((v) => v.id === savedVoice);
-        if (voice && audioRef.current) audioRef.current.playbackRate = voice.pitch;
-      });
-    }
-  }, [audio.id]);
-
-  useEffect(() => {
-    const el = audioRef.current;
-    if (!el) return;
-    if (isActive && isPlaying) {
-      connectToEngine();
-      getAudioEffectsEngine().resume();
-      el.play().catch(() => {});
-    } else {
-      el.pause();
-    }
-  }, [isActive, isPlaying, connectToEngine]);
-
   useEffect(() => {
     if (isActive && autoPlay && playSignal > 0) {
-      if (audioRef.current?.ended) {
-        audioRef.current.currentTime = 0;
-      }
-      setIsPlaying(true);
-    } else if (!isActive) {
-      setIsPlaying(false);
-      audioRef.current?.pause();
+      playback.playTrack(audio).catch(() => {});
     }
-  }, [isActive, autoPlay, playSignal]);
+  }, [audio, autoPlay, isActive, playSignal, playback]);
 
   useEffect(() => {
-    const el = audioRef.current;
-    if (!el) return;
-
-    const onTimeUpdate = () => {
-      setCurrentTime(el.currentTime);
-      if (el.duration && isFinite(el.duration)) setProgress((el.currentTime / el.duration) * 100);
-    };
-    const onLoadedMetadata = () => {
-      if (el.duration && isFinite(el.duration)) setDuration(el.duration);
-    };
-    const onEnded = () => {
-      if (repeatMode === 'loop') {
-        el.currentTime = 0;
-        el.play().catch(() => {});
-      } else if (repeatMode === 'one') {
-        el.currentTime = 0;
-        el.play().catch(() => {});
-        setRepeatMode('none'); // play once more then stop repeating
-      } else {
-        setIsPlaying(false);
-        setProgress(0);
+    if (isActive && playback.endedTrackId === audio.id && playback.endedSignal > 0) {
         onNext();
-      }
-    };
+    }
+  }, [audio.id, isActive, onNext, playback.endedSignal, playback.endedTrackId]);
 
-    el.addEventListener('timeupdate', onTimeUpdate);
-    el.addEventListener('loadedmetadata', onLoadedMetadata);
-    el.addEventListener('ended', onEnded);
-    return () => {
-      el.removeEventListener('timeupdate', onTimeUpdate);
-      el.removeEventListener('loadedmetadata', onLoadedMetadata);
-      el.removeEventListener('ended', onEnded);
-    };
-  }, [onNext, repeatMode]);
-
-  const togglePlay = () => setIsPlaying(!isPlaying);
+  const togglePlay = () => playback.toggleTrack(audio).catch(() => {});
 
   const cycleRepeat = () => {
-    setRepeatMode(prev => prev === 'none' ? 'one' : prev === 'one' ? 'loop' : 'none');
+    playback.cycleRepeatMode(audio.id);
   };
 
   const bgGradient = theme === 'dark'
@@ -129,7 +56,6 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext }:
 
   return (
     <div className="relative h-[calc(100vh-4rem)] w-full snap-start flex flex-col">
-      <audio ref={audioRef} src={audio.audioUrl} preload="metadata" crossOrigin="anonymous" />
       <div className="absolute inset-0" style={{ background: bgGradient }} />
 
       {/* Visualizer */}
@@ -175,7 +101,7 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext }:
         {/* Effects & Voice row */}
         <div className="flex items-center gap-2 flex-wrap">
           <ImmersiveEffectsPanel audioId={audio.id} isPlaying={isPlaying && isActive} allowEffects={audio.allowImmersiveEffects} />
-          <VoiceSelectorPanel audioElement={audioRef.current} audioId={audio.id} />
+          <VoiceSelectorPanel audioElement={isCurrent ? playback.audioElement : null} audioId={audio.id} />
         </div>
 
         {/* Player controls */}
