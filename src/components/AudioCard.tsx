@@ -69,11 +69,13 @@ const AudioCard = ({ audio, isActive, autoPlay = true, onNext }: AudioCardProps)
   }, [isActive, isPlaying, connectToEngine]);
 
   useEffect(() => {
-    if (!isActive) {
+    if (isActive && autoPlay) {
+      setIsPlaying(true);
+    } else if (!isActive) {
       setIsPlaying(false);
       audioRef.current?.pause();
     }
-  }, [isActive]);
+  }, [isActive, autoPlay]);
 
   useEffect(() => {
     const el = audioRef.current;
