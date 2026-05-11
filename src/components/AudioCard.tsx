@@ -11,12 +11,13 @@ import { getAudioEffectsEngine } from '@/audio/AudioEffectsEngine';
 interface AudioCardProps {
   audio: AudioPost;
   isActive: boolean;
+  autoPlay?: boolean;
   onNext: () => void;
 }
 
 type RepeatMode = 'none' | 'one' | 'loop';
 
-const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
+const AudioCard = ({ audio, isActive, autoPlay = true, onNext }: AudioCardProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [liked, setLiked] = useState(audio.isLiked);
   const [saved, setSaved] = useState(audio.isSaved);
@@ -68,11 +69,13 @@ const AudioCard = ({ audio, isActive, onNext }: AudioCardProps) => {
   }, [isActive, isPlaying, connectToEngine]);
 
   useEffect(() => {
-    if (!isActive) {
+    if (isActive && autoPlay) {
+      setIsPlaying(true);
+    } else if (!isActive) {
       setIsPlaying(false);
       audioRef.current?.pause();
     }
-  }, [isActive]);
+  }, [isActive, autoPlay]);
 
   useEffect(() => {
     const el = audioRef.current;
