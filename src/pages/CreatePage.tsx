@@ -119,8 +119,9 @@ const CreatePage = () => {
   };
 
   const addTag = () => {
-    if (tagInput.trim() && tags.length < 5) {
-      setTags([...tags, tagInput.trim()]);
+    const v = tagInput.trim().slice(0, 50);
+    if (v && tags.length < 5) {
+      setTags([...tags, v]);
       setTagInput('');
     }
   };
@@ -272,6 +273,7 @@ const CreatePage = () => {
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          maxLength={200}
           placeholder="Ej: Reflexión sobre el amor de Dios"
           className="w-full h-11 px-3 rounded-xl bg-card/80 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
         />
@@ -283,6 +285,7 @@ const CreatePage = () => {
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          maxLength={2000}
           placeholder="Describe tu audio..."
           rows={3}
           className="w-full px-3 py-2 rounded-xl bg-card/80 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none shadow-sm"
@@ -297,6 +300,7 @@ const CreatePage = () => {
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addTag()}
+            maxLength={50}
             placeholder="Ej: Fe, Salmos..."
             className="flex-1 h-10 px-3 rounded-xl bg-card/80 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary shadow-sm"
           />
