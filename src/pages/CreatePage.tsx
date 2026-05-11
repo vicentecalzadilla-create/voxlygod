@@ -165,7 +165,7 @@ const CreatePage = () => {
       const { error: insErr } = await supabase.from('audios').insert({
         title,
         description,
-        creator_name: user?.email?.split('@')[0] || 'Anónimo',
+        creator_name: 'Creador',
         creator_avatar: '🙏',
         tags,
         category: 'General',
