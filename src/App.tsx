@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import BottomNav from "@/components/BottomNav";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import FeedPage from "./pages/FeedPage";
 import LoginPage from "./pages/LoginPage";
 import DiscoverPage from "./pages/DiscoverPage";
