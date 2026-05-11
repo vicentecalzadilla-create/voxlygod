@@ -28,9 +28,9 @@ const App = () => (
               <Route path="/login" element={<LoginPage />} />
               <Route path="/" element={<FeedPage />} />
               <Route path="/discover" element={<DiscoverPage />} />
-              <Route path="/create" element={<CreatePage />} />
-              <Route path="/playlists" element={<PlaylistsPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/create" element={<ProtectedRoute><CreatePage /></ProtectedRoute>} />
+              <Route path="/playlists" element={<ProtectedRoute><PlaylistsPage /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <BottomNav />
