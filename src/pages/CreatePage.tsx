@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Mic, Upload, Wand2, X, Sparkles, Volume2, Square, Play, Pause, AlertCircle } from 'lucide-react';
 import { EFFECTS_LIST, getAudioEffectsEngine, type EffectType } from '@/audio/AudioEffectsEngine';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +14,7 @@ const visualEffects = [
 ];
 
 const CreatePage = () => {
+  const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -141,15 +143,25 @@ const CreatePage = () => {
     }
     setUploading(true);
     try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        toast({
+          title: 'Inicia sesión',
+          description: 'Debes entrar con una cuenta para publicar audios.',
+          variant: 'destructive',
+        });
+        navigate('/login');
+        return;
+      }
+
       const ext = audioBlob.type.includes('webm') ? 'webm' : audioBlob.type.includes('mpeg') ? 'mp3' : 'audio';
-      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const { error: upErr } = await supabase.storage.from('audios').upload(fileName, audioBlob, {
         contentType: audioBlob.type || 'audio/webm',
         upsert: false,
       });
       if (upErr) throw upErr;
       const { data: pub } = supabase.storage.from('audios').getPublicUrl(fileName);
-      const { data: { user } } = await supabase.auth.getUser();
       const { error: insErr } = await supabase.from('audios').insert({
         title,
         description,
@@ -161,7 +173,7 @@ const CreatePage = () => {
         audio_url: pub.publicUrl,
         allow_immersive_effects: allowImmersive,
         allow_voice_change: allowVoiceChange,
-        user_id: user?.id ?? null,
+        user_id: user.id,
         duration: Math.round(recordSeconds || 0),
       });
       if (insErr) throw insErr;
