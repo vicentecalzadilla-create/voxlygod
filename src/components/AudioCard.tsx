@@ -12,12 +12,13 @@ interface AudioCardProps {
   audio: AudioPost;
   isActive: boolean;
   autoPlay?: boolean;
+  playSignal?: number;
   onNext: () => void;
 }
 
 type RepeatMode = 'none' | 'one' | 'loop';
 
-const AudioCard = ({ audio, isActive, autoPlay = true, onNext }: AudioCardProps) => {
+const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext }: AudioCardProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [liked, setLiked] = useState(audio.isLiked);
   const [saved, setSaved] = useState(audio.isSaved);
@@ -69,13 +70,16 @@ const AudioCard = ({ audio, isActive, autoPlay = true, onNext }: AudioCardProps)
   }, [isActive, isPlaying, connectToEngine]);
 
   useEffect(() => {
-    if (isActive && autoPlay) {
+    if (isActive && autoPlay && playSignal > 0) {
+      if (audioRef.current?.ended) {
+        audioRef.current.currentTime = 0;
+      }
       setIsPlaying(true);
     } else if (!isActive) {
       setIsPlaying(false);
       audioRef.current?.pause();
     }
-  }, [isActive, autoPlay]);
+  }, [isActive, autoPlay, playSignal]);
 
   useEffect(() => {
     const el = audioRef.current;

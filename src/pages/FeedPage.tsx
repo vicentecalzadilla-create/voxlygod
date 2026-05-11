@@ -1,17 +1,59 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { ToggleLeft, ToggleRight } from 'lucide-react';
 import { mockAudios, categories } from '@/data/mockData';
 import AudioCard from '@/components/AudioCard';
 
 const FeedPage = () => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [playSignal, setPlaySignal] = useState(1);
   const [autoNext, setAutoNext] = useState(true);
   const [activeCategory, setActiveCategory] = useState('Para ti');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const activeIndexRef = useRef(0);
+  const scrollRafRef = useRef<number | null>(null);
+
+  const setActiveAudio = useCallback((index: number) => {
+    const safeIndex = Math.max(0, Math.min(index, mockAudios.length - 1));
+    if (safeIndex === activeIndexRef.current) return;
+    activeIndexRef.current = safeIndex;
+    setActiveIndex(safeIndex);
+    setPlaySignal(signal => signal + 1);
+  }, []);
+
+  const updateActiveFromScroll = useCallback(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const containerCenter = containerRect.top + containerRect.height / 2;
+    let bestIndex = activeIndexRef.current;
+    let bestScore = Number.NEGATIVE_INFINITY;
+
+    Array.from(container.children).forEach((child, index) => {
+      const rect = (child as HTMLElement).getBoundingClientRect();
+      const visible = Math.max(0, Math.min(rect.bottom, containerRect.bottom) - Math.max(rect.top, containerRect.top));
+      const visibleRatio = visible / Math.max(1, rect.height);
+      const centerDistance = Math.abs((rect.top + rect.height / 2) - containerCenter);
+      const centeredScore = 1 - centerDistance / Math.max(1, containerRect.height / 2);
+      const score = visibleRatio >= 0.6 ? centeredScore + visibleRatio : visibleRatio - 2;
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = index;
+      }
+    });
+
+    setActiveAudio(bestIndex);
+  }, [setActiveAudio]);
+
+  useEffect(() => () => {
+    if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
+  }, []);
 
   const handleNext = () => {
     const next = (activeIndex + 1) % mockAudios.length;
+    activeIndexRef.current = next;
     setActiveIndex(next);
+    setPlaySignal(signal => signal + 1);
     const el = scrollRef.current?.children[next] as HTMLElement;
     el?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -57,14 +99,13 @@ const FeedPage = () => {
       <div
         ref={scrollRef}
         className="h-full overflow-y-auto snap-y snap-mandatory"
-        onScroll={(e) => {
-          const el = e.currentTarget;
-          const index = Math.round(el.scrollTop / el.clientHeight);
-          if (index !== activeIndex) setActiveIndex(index);
+        onScroll={() => {
+          if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
+          scrollRafRef.current = requestAnimationFrame(updateActiveFromScroll);
         }}
       >
         {mockAudios.map((audio, i) => (
-          <AudioCard key={audio.id} audio={audio} isActive={i === activeIndex} autoPlay={autoNext} onNext={handleNext} />
+          <AudioCard key={audio.id} audio={audio} isActive={i === activeIndex} autoPlay={autoNext} playSignal={playSignal} onNext={handleNext} />
         ))}
       </div>
     </div>
