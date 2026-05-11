@@ -64,7 +64,7 @@ const FeedPage = () => {
         }}
       >
         {mockAudios.map((audio, i) => (
-          <AudioCard key={audio.id} audio={audio} isActive={i === activeIndex} onNext={handleNext} />
+          <AudioCard key={audio.id} audio={audio} isActive={i === activeIndex} autoPlay={autoNext} onNext={handleNext} />
         ))}
       </div>
     </div>
