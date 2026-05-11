@@ -21,12 +21,15 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext }:
   const [saved, setSaved] = useState(audio.isSaved);
   const { theme } = useTheme();
   const playback = useAudioPlayback();
-  const { playTrack, toggleTrack, cycleRepeatMode } = playback;
+  const { playTrack, toggleTrack, cycleRepeatMode, seekTo } = playback;
   const isCurrent = playback.currentTrackId === audio.id;
   const isPlaying = isCurrent && playback.isPlaying;
-  const currentTime = isCurrent ? playback.currentTime : 0;
-  const duration = isCurrent ? playback.duration || audio.duration : audio.duration;
-  const progress = isCurrent ? playback.progress : 0;
+  const [scrubbing, setScrubbing] = useState(false);
+  const [scrubTime, setScrubTime] = useState(0);
+  const liveTime = isCurrent ? playback.currentTime : 0;
+  const currentTime = scrubbing ? scrubTime : liveTime;
+  const duration = (isCurrent ? playback.duration : 0) || audio.duration;
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const repeatMode = playback.getRepeatMode(audio.id);
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60 | 0).toString().padStart(2, '0')}`;
