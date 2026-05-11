@@ -29,6 +29,7 @@ export const EFFECTS_LIST: EffectInfo[] = [
 class AudioEffectsEngine {
   private ctx: AudioContext | null = null;
   private sourceNode: MediaElementAudioSourceNode | null = null;
+  private sourceNodes = new WeakMap<HTMLAudioElement, MediaElementAudioSourceNode>();
   private currentEffect: EffectType = 'none';
   private connectedElement: HTMLAudioElement | null = null;
   private effectNodes: AudioNode[] = [];
@@ -51,7 +52,9 @@ class AudioEffectsEngine {
     if (ctx.state === 'suspended') ctx.resume();
 
     this.connectedElement = audio;
-    this.sourceNode = ctx.createMediaElementSource(audio);
+    const existingSource = this.sourceNodes.get(audio);
+    this.sourceNode = existingSource || ctx.createMediaElementSource(audio);
+    if (!existingSource) this.sourceNodes.set(audio, this.sourceNode);
     this.rebuildGraph();
   }
 
