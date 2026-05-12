@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { ToggleLeft, ToggleRight } from 'lucide-react';
-import { mockAudios, categories } from '@/data/mockData';
+import { mockAudios, categories, type AudioPost } from '@/data/mockData';
 import AudioCard from '@/components/AudioCard';
+import { supabase } from '@/integrations/supabase/client';
 
 const FeedPage = () => {
   const [activeIndex, setActiveIndex] = useState(0);
