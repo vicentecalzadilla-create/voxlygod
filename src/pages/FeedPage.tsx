@@ -55,7 +55,7 @@ const FeedPage = () => {
   }, [audios.length]);
 
   const setActiveAudio = useCallback((index: number) => {
-    const safeIndex = Math.max(0, Math.min(index, mockAudios.length - 1));
+    const safeIndex = Math.max(0, Math.min(index, audios.length - 1));
     if (safeIndex === activeIndexRef.current) return;
     activeIndexRef.current = safeIndex;
     setActiveIndex(safeIndex);
@@ -92,7 +92,7 @@ const FeedPage = () => {
   }, []);
 
   const handleNext = () => {
-    const next = (activeIndex + 1) % mockAudios.length;
+    const next = (activeIndex + 1) % audios.length;
     activeIndexRef.current = next;
     setActiveIndex(next);
     setPlaySignal(signal => signal + 1);
@@ -146,7 +146,7 @@ const FeedPage = () => {
           scrollRafRef.current = requestAnimationFrame(updateActiveFromScroll);
         }}
       >
-        {mockAudios.map((audio, i) => (
+        {audios.map((audio, i) => (
           <AudioCard key={audio.id} audio={audio} isActive={i === activeIndex} autoPlay={autoNext} playSignal={playSignal} onNext={handleNext} />
         ))}
       </div>
