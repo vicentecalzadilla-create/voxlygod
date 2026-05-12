@@ -9,9 +9,50 @@ const FeedPage = () => {
   const [playSignal, setPlaySignal] = useState(1);
   const [autoNext, setAutoNext] = useState(true);
   const [activeCategory, setActiveCategory] = useState('Para ti');
+  const [userAudios, setUserAudios] = useState<AudioPost[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeIndexRef = useRef(0);
   const scrollRafRef = useRef<number | null>(null);
+
+  const audios = useMemo(() => [...userAudios, ...mockAudios], [userAudios]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('audios')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (cancelled || !data) return;
+      const mapped: AudioPost[] = data.map((row: any) => ({
+        id: row.id,
+        title: row.title,
+        description: row.description || '',
+        creatorName: row.creator_name,
+        creatorAvatar: row.creator_avatar || '🙏',
+        duration: row.duration || 0,
+        likes: row.likes || 0,
+        comments: row.comments || 0,
+        shares: row.shares || 0,
+        tags: row.tags || [],
+        verse: row.verse || undefined,
+        category: row.category || 'General',
+        visualEffect: (row.visual_effect || 'light-rays') as AudioPost['visualEffect'],
+        isLiked: false,
+        isSaved: false,
+        allowImmersiveEffects: row.allow_immersive_effects ?? true,
+        audioUrl: row.audio_url,
+      }));
+      setUserAudios(mapped);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Autoplay first track once mounted
+  useEffect(() => {
+    setPlaySignal(s => s + 1);
+  }, [audios.length]);
 
   const setActiveAudio = useCallback((index: number) => {
     const safeIndex = Math.max(0, Math.min(index, mockAudios.length - 1));
