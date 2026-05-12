@@ -60,7 +60,7 @@ const FeedPage = () => {
     activeIndexRef.current = safeIndex;
     setActiveIndex(safeIndex);
     setPlaySignal(signal => signal + 1);
-  }, []);
+  }, [audios.length]);
 
   const updateActiveFromScroll = useCallback(() => {
     const container = scrollRef.current;
