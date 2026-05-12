@@ -1,8 +1,11 @@
-import { Settings, Bookmark, Clock, LogOut, ChevronRight, Sun, Moon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Settings, Bookmark, Clock, LogOut, ChevronRight, Sun, Moon, Play, Pause, Pencil, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useAudioPlayback } from '@/audio/AudioPlaybackContext';
+import type { AudioPost } from '@/data/mockData';
 
 const ProfilePage = () => {
   const { theme, toggleTheme } = useTheme();
