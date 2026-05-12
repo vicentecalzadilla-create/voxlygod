@@ -175,6 +175,48 @@ const ProfilePage = () => {
         ))}
       </div>
 
+      {/* My Audios */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h3 className="font-serif text-sm font-semibold gold-text">Mis Audios</h3>
+          <button onClick={() => navigate('/create')} className="text-[10px] text-primary font-medium">+ Nuevo</button>
+        </div>
+        {loadingAudios ? (
+          <p className="text-xs text-muted-foreground">Cargando…</p>
+        ) : myAudios.length === 0 ? (
+          <p className="text-xs text-muted-foreground">Aún no has grabado audios. Toca "+ Nuevo" para empezar.</p>
+        ) : (
+          <div className="space-y-2">
+            {myAudios.map(a => {
+              const isCurrent = playback.currentTrackId === a.id;
+              const playing = isCurrent && playback.isPlaying;
+              return (
+                <div key={a.id} className="flex items-center gap-2 p-2.5 rounded-xl card-luminous">
+                  <button
+                    onClick={() => handlePlay(a)}
+                    className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-primary-foreground"
+                    style={{ background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))' }}
+                    aria-label={playing ? 'Pausar' : 'Reproducir'}
+                  >
+                    {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold truncate">{a.title}</p>
+                    <p className="text-[10px] text-muted-foreground">{a.category} · {a.duration || 0}s</p>
+                  </div>
+                  <button onClick={() => handleRename(a)} className="w-8 h-8 rounded-full hover:bg-primary/10 flex items-center justify-center" aria-label="Editar título">
+                    <Pencil className="w-3.5 h-3.5 text-primary" />
+                  </button>
+                  <button onClick={() => handleDelete(a)} className="w-8 h-8 rounded-full hover:bg-destructive/10 flex items-center justify-center" aria-label="Eliminar">
+                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* AI section */}
       <div className="p-4 rounded-2xl glass-border space-y-3"
         style={{ background: 'linear-gradient(135deg, hsl(38 80% 55% / 0.1), hsl(270 50% 65% / 0.08), hsl(200 70% 70% / 0.06))' }}>
