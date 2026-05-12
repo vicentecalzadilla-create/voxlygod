@@ -1,12 +1,83 @@
-import { Settings, Bookmark, Clock, LogOut, ChevronRight, Sun, Moon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Settings, Bookmark, Clock, LogOut, ChevronRight, Sun, Moon, Play, Pause, Pencil, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useAudioPlayback } from '@/audio/AudioPlaybackContext';
+import type { AudioPost } from '@/data/mockData';
+
+interface UserAudioRow {
+  id: string;
+  title: string;
+  audio_url: string;
+  duration: number | null;
+  visual_effect: string | null;
+  category: string | null;
+}
 
 const ProfilePage = () => {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const playback = useAudioPlayback();
+  const [myAudios, setMyAudios] = useState<UserAudioRow[]>([]);
+  const [loadingAudios, setLoadingAudios] = useState(true);
+
+  const loadMyAudios = async () => {
+    setLoadingAudios(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setMyAudios([]); setLoadingAudios(false); return; }
+    const { data } = await supabase
+      .from('audios')
+      .select('id,title,audio_url,duration,visual_effect,category')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    setMyAudios((data as UserAudioRow[]) || []);
+    setLoadingAudios(false);
+  };
+
+  useEffect(() => { loadMyAudios(); }, []);
+
+  const handlePlay = (a: UserAudioRow) => {
+    const post: AudioPost = {
+      id: a.id,
+      title: a.title,
+      description: '',
+      creatorName: 'Tú',
+      creatorAvatar: '🙏',
+      duration: a.duration || 0,
+      likes: 0, comments: 0, shares: 0,
+      tags: [],
+      category: a.category || 'General',
+      visualEffect: (a.visual_effect || 'light-rays') as AudioPost['visualEffect'],
+      isLiked: false, isSaved: false, allowImmersiveEffects: true,
+      audioUrl: a.audio_url,
+    };
+    playback.toggleTrack(post).catch(() => {});
+  };
+
+  const handleRename = async (a: UserAudioRow) => {
+    const next = window.prompt('Nuevo título', a.title);
+    if (!next || next.trim() === '' || next === a.title) return;
+    const { error } = await supabase.from('audios').update({ title: next.trim() }).eq('id', a.id);
+    if (error) {
+      toast({ title: 'No se pudo editar', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setMyAudios(list => list.map(x => x.id === a.id ? { ...x, title: next.trim() } : x));
+    toast({ title: '✅ Título actualizado' });
+  };
+
+  const handleDelete = async (a: UserAudioRow) => {
+    if (!window.confirm(`¿Eliminar "${a.title}"?`)) return;
+    const { error } = await supabase.from('audios').delete().eq('id', a.id);
+    if (error) {
+      toast({ title: 'No se pudo eliminar', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setMyAudios(list => list.filter(x => x.id !== a.id));
+    toast({ title: '🗑️ Audio eliminado' });
+  };
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -102,6 +173,48 @@ const ProfilePage = () => {
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
         ))}
+      </div>
+
+      {/* My Audios */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h3 className="font-serif text-sm font-semibold gold-text">Mis Audios</h3>
+          <button onClick={() => navigate('/create')} className="text-[10px] text-primary font-medium">+ Nuevo</button>
+        </div>
+        {loadingAudios ? (
+          <p className="text-xs text-muted-foreground">Cargando…</p>
+        ) : myAudios.length === 0 ? (
+          <p className="text-xs text-muted-foreground">Aún no has grabado audios. Toca "+ Nuevo" para empezar.</p>
+        ) : (
+          <div className="space-y-2">
+            {myAudios.map(a => {
+              const isCurrent = playback.currentTrackId === a.id;
+              const playing = isCurrent && playback.isPlaying;
+              return (
+                <div key={a.id} className="flex items-center gap-2 p-2.5 rounded-xl card-luminous">
+                  <button
+                    onClick={() => handlePlay(a)}
+                    className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-primary-foreground"
+                    style={{ background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))' }}
+                    aria-label={playing ? 'Pausar' : 'Reproducir'}
+                  >
+                    {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold truncate">{a.title}</p>
+                    <p className="text-[10px] text-muted-foreground">{a.category} · {a.duration || 0}s</p>
+                  </div>
+                  <button onClick={() => handleRename(a)} className="w-8 h-8 rounded-full hover:bg-primary/10 flex items-center justify-center" aria-label="Editar título">
+                    <Pencil className="w-3.5 h-3.5 text-primary" />
+                  </button>
+                  <button onClick={() => handleDelete(a)} className="w-8 h-8 rounded-full hover:bg-destructive/10 flex items-center justify-center" aria-label="Eliminar">
+                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* AI section */}

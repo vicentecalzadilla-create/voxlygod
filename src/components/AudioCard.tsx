@@ -38,7 +38,8 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext }:
 
   useEffect(() => {
     if (isActive && autoPlay && playSignal > 0) {
-      playTrack(audio).catch(() => {});
+      // Always restart from 0:00 when track becomes active via scroll/auto
+      playTrack(audio, { restart: true }).catch(() => {});
     }
   }, [audio, autoPlay, isActive, playSignal, playTrack]);
 

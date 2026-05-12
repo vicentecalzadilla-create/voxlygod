@@ -185,10 +185,11 @@ const CreatePage = () => {
         duration: Math.round(recordSeconds || 0),
       });
       if (insErr) throw insErr;
-      toast({ title: '🎉 Publicado', description: 'Tu audio ya está disponible.' });
+      toast({ title: '🎉 Publicado', description: 'Tu audio ya está disponible en el feed.' });
       setTitle(''); setDescription(''); setTags([]); setAudioBlob(null);
       if (audioUrl) URL.revokeObjectURL(audioUrl);
       setAudioUrl(null); setRecordSeconds(0);
+      navigate('/');
     } catch (err: any) {
       console.error(err);
       toast({ title: 'Error al publicar', description: 'Inténtalo de nuevo más tarde.', variant: 'destructive' });
