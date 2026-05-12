@@ -213,14 +213,35 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext }:
 
         {/* Side actions */}
       <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-5 items-center">
-        <button onClick={() => setAmen(!amen)} className="flex flex-col items-center gap-0.5 group">
+        <button
+          onClick={() => {
+            setAmen(!amen);
+            setAmenBurstKey(k => k + 1);
+            setIconPulseKey(k => k + 1);
+          }}
+          className="relative flex flex-col items-center gap-0.5 group"
+        >
           <span
-            className={`text-xl transition-all duration-300 ${amen ? 'scale-110' : 'opacity-70 grayscale group-hover:opacity-100 group-hover:grayscale-0'}`}
-            style={amen ? { filter: 'drop-shadow(0 0 6px hsl(var(--primary) / 0.6))' } : undefined}
+            key={`icon-${iconPulseKey}`}
+            className={`text-xl transition-all duration-300 ${amen ? 'scale-110' : 'opacity-70 grayscale group-hover:opacity-100 group-hover:grayscale-0'} ${iconPulseKey > 0 ? 'animate-amen-pulse' : ''}`}
+            style={amen ? { filter: 'drop-shadow(0 0 8px hsl(var(--primary) / 0.7))' } : undefined}
           >🙏</span>
-          <span className={`text-[10px] transition-colors ${amen ? 'text-primary font-semibold' : 'text-foreground/70'}`}>
-            {(audio.likes + (amen ? 1 : 0)).toLocaleString()} Amén
+          <span className={`text-[10px] tabular-nums transition-colors ${amen ? 'text-primary font-semibold' : 'text-foreground/70'}`}>
+            {(audio.likes + (amen ? 1 : 0)).toLocaleString()}
           </span>
+          {amenBurstKey > 0 && (
+            <span
+              key={`burst-${amenBurstKey}`}
+              aria-hidden
+              className="pointer-events-none absolute -top-3 left-1/2 -translate-x-1/2 font-serif text-sm font-semibold tracking-wide animate-amen-rise"
+              style={{
+                color: 'hsl(var(--primary))',
+                textShadow: '0 0 10px hsl(var(--primary) / 0.7), 0 0 20px hsl(var(--primary) / 0.4)',
+              }}
+            >
+              Amén
+            </span>
+          )}
         </button>
         <button className="flex flex-col items-center gap-0.5">
           <MessageCircle className="w-6 h-6 text-foreground/50" />
