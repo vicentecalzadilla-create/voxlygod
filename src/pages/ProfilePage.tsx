@@ -7,9 +7,77 @@ import { toast } from '@/hooks/use-toast';
 import { useAudioPlayback } from '@/audio/AudioPlaybackContext';
 import type { AudioPost } from '@/data/mockData';
 
+interface UserAudioRow {
+  id: string;
+  title: string;
+  audio_url: string;
+  duration: number | null;
+  visual_effect: string | null;
+  category: string | null;
+}
+
 const ProfilePage = () => {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const playback = useAudioPlayback();
+  const [myAudios, setMyAudios] = useState<UserAudioRow[]>([]);
+  const [loadingAudios, setLoadingAudios] = useState(true);
+
+  const loadMyAudios = async () => {
+    setLoadingAudios(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setMyAudios([]); setLoadingAudios(false); return; }
+    const { data } = await supabase
+      .from('audios')
+      .select('id,title,audio_url,duration,visual_effect,category')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    setMyAudios((data as UserAudioRow[]) || []);
+    setLoadingAudios(false);
+  };
+
+  useEffect(() => { loadMyAudios(); }, []);
+
+  const handlePlay = (a: UserAudioRow) => {
+    const post: AudioPost = {
+      id: a.id,
+      title: a.title,
+      description: '',
+      creatorName: 'Tú',
+      creatorAvatar: '🙏',
+      duration: a.duration || 0,
+      likes: 0, comments: 0, shares: 0,
+      tags: [],
+      category: a.category || 'General',
+      visualEffect: (a.visual_effect || 'light-rays') as AudioPost['visualEffect'],
+      isLiked: false, isSaved: false, allowImmersiveEffects: true,
+      audioUrl: a.audio_url,
+    };
+    playback.toggleTrack(post).catch(() => {});
+  };
+
+  const handleRename = async (a: UserAudioRow) => {
+    const next = window.prompt('Nuevo título', a.title);
+    if (!next || next.trim() === '' || next === a.title) return;
+    const { error } = await supabase.from('audios').update({ title: next.trim() }).eq('id', a.id);
+    if (error) {
+      toast({ title: 'No se pudo editar', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setMyAudios(list => list.map(x => x.id === a.id ? { ...x, title: next.trim() } : x));
+    toast({ title: '✅ Título actualizado' });
+  };
+
+  const handleDelete = async (a: UserAudioRow) => {
+    if (!window.confirm(`¿Eliminar "${a.title}"?`)) return;
+    const { error } = await supabase.from('audios').delete().eq('id', a.id);
+    if (error) {
+      toast({ title: 'No se pudo eliminar', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setMyAudios(list => list.filter(x => x.id !== a.id));
+    toast({ title: '🗑️ Audio eliminado' });
+  };
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
