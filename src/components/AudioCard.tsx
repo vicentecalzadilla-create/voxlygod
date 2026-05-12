@@ -18,6 +18,8 @@ interface AudioCardProps {
 
 const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext }: AudioCardProps) => {
   const [amen, setAmen] = useState(audio.isLiked);
+  const [amenBurstKey, setAmenBurstKey] = useState(0);
+  const [iconPulseKey, setIconPulseKey] = useState(0);
   const [saved, setSaved] = useState(audio.isSaved);
   const { theme } = useTheme();
   const playback = useAudioPlayback();
