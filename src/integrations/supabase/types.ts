@@ -29,8 +29,12 @@ export type Database = {
           id: string
           likes: number | null
           shares: number | null
+          source_text: string | null
           tags: string[] | null
           title: string
+          transcript: Json | null
+          translations: Json | null
+          tts_voice: string | null
           user_id: string
           verse: string | null
           visual_effect: string | null
@@ -49,8 +53,12 @@ export type Database = {
           id?: string
           likes?: number | null
           shares?: number | null
+          source_text?: string | null
           tags?: string[] | null
           title: string
+          transcript?: Json | null
+          translations?: Json | null
+          tts_voice?: string | null
           user_id: string
           verse?: string | null
           visual_effect?: string | null
@@ -69,8 +77,12 @@ export type Database = {
           id?: string
           likes?: number | null
           shares?: number | null
+          source_text?: string | null
           tags?: string[] | null
           title?: string
+          transcript?: Json | null
+          translations?: Json | null
+          tts_voice?: string | null
           user_id?: string
           verse?: string | null
           visual_effect?: string | null

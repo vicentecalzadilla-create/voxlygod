@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Save, Scissors, Sparkles, X } from 'lucide-react';
+import { Save, Scissors, Sparkles, X, Type } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import AudioEditTools, { type AudioEditToolsHandle } from '@/components/AudioEditTools';
+import TextToAudioPanel from '@/components/TextToAudioPanel';
 import { VISUAL_EFFECTS } from '@/audio/audioEditUtils';
+import type { TranscriptSegment } from '@/audio/ttsVoices';
 
 interface AudioRow {
   id: string;
@@ -16,6 +18,8 @@ interface AudioRow {
   allow_immersive_effects?: boolean | null;
   allow_voice_change?: boolean | null;
   category?: string | null;
+  source_text?: string | null;
+  tts_voice?: string | null;
 }
 
 interface Props {
@@ -34,6 +38,8 @@ const AudioEditorDialog = ({ open, onOpenChange, audio, onSaved }: Props) => {
   const [allowVoiceChange, setAllowVoiceChange] = useState(audio.allow_voice_change ?? true);
   const [allowImmersive, setAllowImmersive] = useState(audio.allow_immersive_effects ?? true);
   const [saving, setSaving] = useState(false);
+  const [editMode, setEditMode] = useState<'audio' | 'text'>('audio');
+  const [ttsData, setTtsData] = useState<{ url: string; duration: number; transcript: TranscriptSegment[]; source: string; voice: string } | null>(null);
   const editorRef = useRef<AudioEditToolsHandle>(null);
 
   useEffect(() => {
@@ -61,20 +67,31 @@ const AudioEditorDialog = ({ open, onOpenChange, audio, onSaved }: Props) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { toast({ title: 'Inicia sesión', variant: 'destructive' }); return; }
 
-      const edited = await editorRef.current?.buildEdited();
       let newUrl = audio.audio_url;
       let newDuration: number | undefined;
+      let newTranscript: TranscriptSegment[] | null = null;
+      let newSourceText: string | null = null;
+      let newVoice: string | null = null;
 
-      if (edited && edited.edited) {
-        const fileName = `${user.id}/edited-${Date.now()}.wav`;
-        const { error: upErr } = await supabase.storage.from('audios').upload(fileName, edited.blob, {
-          contentType: 'audio/wav', upsert: false,
-        });
-        if (upErr) throw upErr;
-        newUrl = supabase.storage.from('audios').getPublicUrl(fileName).data.publicUrl;
-        newDuration = Math.round(edited.duration);
-      } else if (edited) {
-        newDuration = Math.round(edited.duration);
+      if (editMode === 'text' && ttsData) {
+        newUrl = ttsData.url;
+        newDuration = ttsData.duration;
+        newTranscript = ttsData.transcript;
+        newSourceText = ttsData.source;
+        newVoice = ttsData.voice;
+      } else {
+        const edited = await editorRef.current?.buildEdited();
+        if (edited && edited.edited) {
+          const fileName = `${user.id}/edited-${Date.now()}.wav`;
+          const { error: upErr } = await supabase.storage.from('audios').upload(fileName, edited.blob, {
+            contentType: 'audio/wav', upsert: false,
+          });
+          if (upErr) throw upErr;
+          newUrl = supabase.storage.from('audios').getPublicUrl(fileName).data.publicUrl;
+          newDuration = Math.round(edited.duration);
+        } else if (edited) {
+          newDuration = Math.round(edited.duration);
+        }
       }
 
       const payload: any = {
@@ -87,6 +104,7 @@ const AudioEditorDialog = ({ open, onOpenChange, audio, onSaved }: Props) => {
       };
       if (newUrl !== audio.audio_url) payload.audio_url = newUrl;
       if (newDuration !== undefined) payload.duration = newDuration;
+      if (newTranscript) { payload.transcript = newTranscript; payload.source_text = newSourceText; payload.tts_voice = newVoice; payload.translations = {}; }
 
       if (asNewVersion) {
         const { data: src } = await supabase.from('audios').select('*').eq('id', audio.id).maybeSingle();
@@ -129,8 +147,30 @@ const AudioEditorDialog = ({ open, onOpenChange, audio, onSaved }: Props) => {
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Audio editing tools */}
-          <AudioEditTools ref={editorRef} source={audio.audio_url} />
+          {/* Edit mode tabs */}
+          <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-card/60">
+            {([
+              { id: 'audio', label: 'Editar audio', icon: <Scissors className="w-3 h-3" /> },
+              { id: 'text', label: 'Editar texto', icon: <Type className="w-3 h-3" /> },
+            ] as const).map(t => (
+              <button key={t.id} type="button" onClick={() => setEditMode(t.id)}
+                className={`flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                  editMode === t.id ? 'text-primary-foreground gold-glow' : 'text-foreground/70'
+                }`}
+                style={editMode === t.id ? { background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))' } : undefined}
+              >{t.icon}{t.label}</button>
+            ))}
+          </div>
+
+          {editMode === 'audio' ? (
+            <AudioEditTools ref={editorRef} source={audio.audio_url} />
+          ) : (
+            <TextToAudioPanel
+              initialText={audio.source_text || ''}
+              initialVoice={audio.tts_voice || 'pastor-sereno'}
+              onGenerated={(r) => setTtsData({ url: r.audio_url, duration: r.duration, transcript: r.transcript, source: r.source_text, voice: r.voice })}
+            />
+          )}
 
           {/* Title */}
           <div className="space-y-1.5">

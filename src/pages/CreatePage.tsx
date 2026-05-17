@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic, Upload, Wand2, X, Sparkles, Volume2, Square, AlertCircle } from 'lucide-react';
+import { Mic, Upload, Wand2, X, Sparkles, Volume2, Square, AlertCircle, Type } from 'lucide-react';
 import { EFFECTS_LIST, getAudioEffectsEngine, type EffectType } from '@/audio/AudioEffectsEngine';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import AudioEditTools, { type AudioEditToolsHandle } from '@/components/AudioEditTools';
 import { VISUAL_EFFECTS } from '@/audio/audioEditUtils';
+import TextToAudioPanel from '@/components/TextToAudioPanel';
+import type { TranscriptSegment } from '@/audio/ttsVoices';
 
 const visualEffects = VISUAL_EFFECTS;
 
@@ -27,6 +29,8 @@ const CreatePage = () => {
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [micError, setMicError] = useState<string | null>(null);
+  const [mode, setMode] = useState<'record' | 'upload' | 'text'>('record');
+  const [ttsData, setTtsData] = useState<{ url: string; duration: number; transcript: TranscriptSegment[]; source: string; voice: string } | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -131,8 +135,8 @@ const CreatePage = () => {
   };
 
   const handlePublish = async () => {
-    if (!audioBlob) {
-      toast({ title: 'Sin audio', description: 'Graba o sube un audio primero.', variant: 'destructive' });
+    if (!audioBlob && !ttsData) {
+      toast({ title: 'Sin audio', description: 'Graba, sube un archivo o genera desde texto.', variant: 'destructive' });
       return;
     }
     if (!title.trim()) {
@@ -152,53 +156,72 @@ const CreatePage = () => {
         return;
       }
 
-      // Use edited version if user trimmed or appended a segment
-      const edited = await editorRef.current?.buildEdited();
-      const useEdited = !!(edited && edited.edited);
-      const uploadBlob: Blob = useEdited ? edited!.blob : audioBlob;
-      const finalDuration = edited
-        ? Math.round(edited.duration)
-        : Math.round(recordSeconds || 0);
+      let finalUrl: string;
+      let finalDuration: number;
+      let transcriptForRow: TranscriptSegment[] | null = null;
+      let sourceTextForRow: string | null = null;
+      let voiceForRow: string | null = null;
 
-      const t = uploadBlob.type;
-      const ext = useEdited ? 'wav'
-        : t.includes('webm') ? 'webm'
-        : t.includes('mpeg') || t.includes('mp3') ? 'mp3'
-        : t.includes('ogg') ? 'ogg'
-        : t.includes('wav') ? 'wav'
-        : t.includes('m4a') || t.includes('mp4') ? 'm4a'
-        : t.includes('aac') ? 'aac'
-        : 'webm';
-      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('audios').upload(fileName, uploadBlob, {
-        contentType: uploadBlob.type || 'audio/webm',
-        upsert: false,
-      });
-      if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from('audios').getPublicUrl(fileName);
+      if (mode === 'text' && ttsData) {
+        finalUrl = ttsData.url;
+        finalDuration = ttsData.duration;
+        transcriptForRow = ttsData.transcript;
+        sourceTextForRow = ttsData.source;
+        voiceForRow = ttsData.voice;
+      } else {
+        if (!audioBlob) throw new Error('Sin audio');
+        // Use edited version if user trimmed or appended a segment
+        const edited = await editorRef.current?.buildEdited();
+        const useEdited = !!(edited && edited.edited);
+        const uploadBlob: Blob = useEdited ? edited!.blob : audioBlob;
+        finalDuration = edited
+          ? Math.round(edited.duration)
+          : Math.round(recordSeconds || 0);
+
+        const t = uploadBlob.type;
+        const ext = useEdited ? 'wav'
+          : t.includes('webm') ? 'webm'
+          : t.includes('mpeg') || t.includes('mp3') ? 'mp3'
+          : t.includes('ogg') ? 'ogg'
+          : t.includes('wav') ? 'wav'
+          : t.includes('m4a') || t.includes('mp4') ? 'm4a'
+          : t.includes('aac') ? 'aac'
+          : 'webm';
+        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from('audios').upload(fileName, uploadBlob, {
+          contentType: uploadBlob.type || 'audio/webm',
+          upsert: false,
+        });
+        if (upErr) throw upErr;
+        finalUrl = supabase.storage.from('audios').getPublicUrl(fileName).data.publicUrl;
+      }
+
       const { error: insErr } = await supabase.from('audios').insert({
         title,
         description,
         creator_name: 'Creador',
-        creator_avatar: '🙏',
+        creator_avatar: voiceForRow ? '✨' : '🙏',
         tags,
         category: 'General',
         visual_effect: selectedEffect,
-        audio_url: pub.publicUrl,
+        audio_url: finalUrl,
         allow_immersive_effects: allowImmersive,
         allow_voice_change: allowVoiceChange,
         user_id: user.id,
         duration: finalDuration,
+        transcript: transcriptForRow,
+        source_text: sourceTextForRow,
+        tts_voice: voiceForRow,
       });
       if (insErr) throw insErr;
       toast({ title: '🎉 Publicado', description: 'Tu audio ya está disponible en el feed.' });
-      setTitle(''); setDescription(''); setTags([]); setAudioBlob(null);
+      setTitle(''); setDescription(''); setTags([]); setAudioBlob(null); setTtsData(null);
       if (audioUrl) URL.revokeObjectURL(audioUrl);
       setAudioUrl(null); setRecordSeconds(0);
       navigate('/');
     } catch (err: any) {
       console.error(err);
-      toast({ title: 'Error al publicar', description: 'Inténtalo de nuevo más tarde.', variant: 'destructive' });
+      toast({ title: 'Error al publicar', description: err?.message || 'Inténtalo de nuevo más tarde.', variant: 'destructive' });
     } finally {
       setUploading(false);
     }
@@ -217,11 +240,32 @@ const CreatePage = () => {
         </div>
       )}
 
-      {/* Record / Upload */}
-      <div className="flex gap-3">
+      {/* Mode tabs */}
+      <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-card/60">
+        {([
+          { id: 'record', label: 'Grabar', icon: <Mic className="w-3.5 h-3.5" /> },
+          { id: 'upload', label: 'Subir', icon: <Upload className="w-3.5 h-3.5" /> },
+          { id: 'text', label: 'Desde texto', icon: <Type className="w-3.5 h-3.5" /> },
+        ] as const).map(m => (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => setMode(m.id)}
+            className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-medium transition-all ${
+              mode === m.id ? 'text-primary-foreground gold-glow' : 'text-foreground/70'
+            }`}
+            style={mode === m.id ? { background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))' } : undefined}
+          >
+            {m.icon}{m.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Mode panels */}
+      {mode === 'record' && (
         <button
           onClick={isRecording ? stopRecording : startRecording}
-          className={`flex-1 h-32 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all ${
+          className={`w-full h-32 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all ${
             isRecording ? 'bg-destructive/10 border-2 border-destructive' : 'card-luminous'
           }`}
         >
@@ -236,18 +280,26 @@ const CreatePage = () => {
             {isRecording ? `Detener (${fmt(recordSeconds)})` : audioBlob ? 'Grabar de nuevo' : 'Grabar audio'}
           </span>
         </button>
+      )}
 
-        <label className="flex-1 h-32 rounded-2xl card-luminous flex flex-col items-center justify-center gap-2 hover:shadow-md transition-all cursor-pointer">
+      {mode === 'upload' && (
+        <label className="w-full h-32 rounded-2xl card-luminous flex flex-col items-center justify-center gap-2 hover:shadow-md transition-all cursor-pointer">
           <div className="w-14 h-14 rounded-full flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg, hsl(200 70% 70% / 0.2), hsl(270 50% 65% / 0.2))' }}>
             <Upload className="w-6 h-6 text-accent" />
           </div>
-          <span className="text-xs font-medium">Subir archivo</span>
+          <span className="text-xs font-medium">{audioBlob ? 'Reemplazar archivo' : 'Subir archivo'}</span>
           <input type="file" accept="audio/*" className="hidden" onChange={handleFileUpload} />
         </label>
-      </div>
+      )}
 
-      {audioBlob && (
+      {mode === 'text' && (
+        <TextToAudioPanel
+          onGenerated={(r) => setTtsData({ url: r.audio_url, duration: r.duration, transcript: r.transcript, source: r.source_text, voice: r.voice })}
+        />
+      )}
+
+      {mode !== 'text' && audioBlob && (
         <div className="p-3 rounded-xl glass-border"
           style={{ background: 'linear-gradient(135deg, hsl(38 80% 55% / 0.08), hsl(340 60% 70% / 0.06))' }}>
           <AudioEditTools ref={editorRef} source={audioBlob} />
