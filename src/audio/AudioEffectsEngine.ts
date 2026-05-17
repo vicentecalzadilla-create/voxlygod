@@ -6,7 +6,8 @@ export type EffectType =
   | 'nature-ambience'
   | 'angelic-voice'
   | 'depth-3d'
-  | 'soft-echo';
+  | 'soft-echo'
+  | 'whisper-echo';
 
 export interface EffectInfo {
   id: EffectType;
@@ -24,6 +25,7 @@ export const EFFECTS_LIST: EffectInfo[] = [
   { id: 'angelic-voice', label: 'Voz Angelical', emoji: '🕊️', description: 'Brillo en la voz' },
   { id: 'depth-3d', label: 'Profundidad 3D', emoji: '🌀', description: 'Efecto espacial' },
   { id: 'soft-echo', label: 'Eco Suave', emoji: '💫', description: 'Eco ligero y cálido' },
+  { id: 'whisper-echo', label: 'Eco Susurro', emoji: '🤫', description: 'Susurro íntimo y cálido' },
 ];
 
 class AudioEffectsEngine {
@@ -285,6 +287,49 @@ class AudioEffectsEngine {
         feedback.connect(delay);
         delay.connect(merger);
         this.effectNodes.push(delay, feedback, merger);
+        lastNode = merger;
+        break;
+      }
+      case 'whisper-echo': {
+        // Intimate close whisper: warm low-pass + short delay + light reverb
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 3800;
+        filter.Q.value = 0.7;
+
+        const presence = ctx.createBiquadFilter();
+        presence.type = 'peaking';
+        presence.frequency.value = 1800;
+        presence.gain.value = 2.5;
+        presence.Q.value = 1.2;
+
+        const delay = ctx.createDelay(0.5);
+        delay.delayTime.value = 0.12;
+        const feedback = ctx.createGain();
+        feedback.gain.value = 0.22;
+
+        const convolver = ctx.createConvolver();
+        convolver.buffer = this.generateImpulseResponse(1.2, 3.5);
+        const wet = ctx.createGain();
+        wet.gain.value = 0.28;
+        const dry = ctx.createGain();
+        dry.gain.value = 0.85;
+
+        const merger = ctx.createGain();
+
+        lastNode.connect(filter);
+        filter.connect(presence);
+        presence.connect(dry);
+        dry.connect(merger);
+
+        presence.connect(delay);
+        delay.connect(feedback);
+        feedback.connect(delay);
+        delay.connect(convolver);
+        convolver.connect(wet);
+        wet.connect(merger);
+
+        this.effectNodes.push(filter, presence, delay, feedback, convolver, wet, dry, merger);
         lastNode = merger;
         break;
       }
