@@ -18,6 +18,8 @@ interface AudioRow {
   allow_immersive_effects?: boolean | null;
   allow_voice_change?: boolean | null;
   category?: string | null;
+  source_text?: string | null;
+  tts_voice?: string | null;
 }
 
 interface Props {
