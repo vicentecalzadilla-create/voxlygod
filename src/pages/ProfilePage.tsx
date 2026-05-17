@@ -35,7 +35,7 @@ const ProfilePage = () => {
     if (!user) { setMyAudios([]); setLoadingAudios(false); return; }
     const { data } = await supabase
       .from('audios')
-      .select('id,title,audio_url,duration,visual_effect,category')
+      .select('id,title,audio_url,duration,visual_effect,category,description,tags,allow_immersive_effects,allow_voice_change')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
     setMyAudios((data as UserAudioRow[]) || []);
