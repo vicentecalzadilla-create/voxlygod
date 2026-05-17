@@ -134,6 +134,16 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
         <div className="flex items-center gap-2 flex-wrap">
           <ImmersiveEffectsPanel audioId={audio.id} isPlaying={isPlaying && isActive} allowEffects={audio.allowImmersiveEffects} />
           <VoiceSelectorPanel audioElement={isCurrent ? playback.audioElement : null} audioId={audio.id} />
+          {hasLyrics && (
+            <button
+              onClick={() => setLyricsOpen(true)}
+              className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-full card-luminous font-medium transition-all hover:gold-glow"
+              aria-label="Mostrar letra sincronizada"
+            >
+              <Type className="w-3.5 h-3.5 text-accent" />
+              <span className="gold-text">Letra</span>
+            </button>
+          )}
         </div>
 
         {/* Player controls */}
