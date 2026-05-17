@@ -49,18 +49,30 @@ function json(status: number, body: unknown) {
   });
 }
 
+function handledError(error: string, detail: Record<string, unknown> = {}) {
+  return json(200, { ok: false, error, fallback: true, ...detail });
+}
+
+function redactHeaders(headers: Headers) {
+  const safe: Record<string, string> = {};
+  for (const [key, value] of headers.entries()) {
+    safe[key] = /key|token|authorization|cookie/i.test(key) ? '[redacted]' : value;
+  }
+  return safe;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
     const apiKey = Deno.env.get('ELEVENLABS_API_KEY');
-    console.log('[generate-tts] start, has key:', !!apiKey);
-    if (!apiKey) return json(500, { error: 'ELEVENLABS_API_KEY no configurada en el servidor' });
+    console.log('[generate-tts] start', { hasElevenLabsKey: Boolean(apiKey), keyLength: apiKey?.length ?? 0 });
+    if (!apiKey) return handledError('ELEVENLABS_API_KEY no configurada en el servidor', { error_type: 'missing_secret' });
 
     const body = await req.json().catch(() => ({}));
     const text: string = (body?.text || '').toString();
     const voice: string = (body?.voice || 'pastor-sereno').toString();
-    if (!text.trim()) return json(400, { error: 'El campo "text" es obligatorio' });
-    if (text.length > 4500) return json(400, { error: 'Texto demasiado largo (máx 4500 caracteres)' });
+    if (!text.trim()) return handledError('El campo "text" es obligatorio', { error_type: 'invalid_text' });
+    if (text.length > 4500) return handledError('Texto demasiado largo (máx 4500 caracteres)', { error_type: 'text_too_long' });
 
     const voiceId = VOICE_MAP[voice] || VOICE_MAP['pastor-sereno'];
     console.log('[generate-tts] voice:', voice, '->', voiceId, 'len:', text.length);
@@ -78,25 +90,37 @@ Deno.serve(async (req) => {
 
     if (!resp.ok) {
       const errTxt = await resp.text();
-      console.error('[generate-tts] ElevenLabs error', resp.status, errTxt);
+      console.error('[generate-tts] ElevenLabs error', {
+        status: resp.status,
+        statusText: resp.statusText,
+        headers: redactHeaders(resp.headers),
+        body: errTxt.slice(0, 2000),
+        voice,
+        voiceId,
+        textLength: text.length,
+      });
       let userMsg = `ElevenLabs ${resp.status}`;
+      let errorType = 'elevenlabs_error';
       if (resp.status === 401) {
         if (/detected_unusual_activity|Free Tier/i.test(errTxt)) {
           userMsg = 'ElevenLabs ha bloqueado la cuenta Free (actividad inusual). Actualiza a un plan de pago en elevenlabs.io o usa otra API key.';
+          errorType = 'account_blocked';
         } else {
           userMsg = 'API key de ElevenLabs inválida';
+          errorType = 'invalid_api_key';
         }
       }
-      else if (resp.status === 402 || resp.status === 429) userMsg = 'Sin créditos / cuota de ElevenLabs agotada';
-      else if (resp.status === 422) userMsg = 'Texto o voz inválidos para ElevenLabs';
-      return json(502, { error: userMsg, status: resp.status, detail: errTxt.slice(0, 500) });
+      else if (resp.status === 402 || resp.status === 429) { userMsg = 'Sin créditos / cuota de ElevenLabs agotada'; errorType = 'quota_exceeded'; }
+      else if (resp.status === 422) { userMsg = 'Texto o voz inválidos para ElevenLabs'; errorType = 'invalid_text_or_voice'; }
+      else if (resp.status >= 500) { userMsg = 'Servicio de ElevenLabs no disponible temporalmente'; errorType = 'provider_unavailable'; }
+      return handledError(userMsg, { error_type: errorType, status: resp.status, detail: errTxt.slice(0, 1000) });
     }
 
     const data = await resp.json();
     const audioBase64: string | undefined = data.audio_base64;
     if (!audioBase64) {
       console.error('[generate-tts] missing audio_base64', Object.keys(data));
-      return json(502, { error: 'Respuesta de ElevenLabs sin audio' });
+      return handledError('Respuesta de ElevenLabs sin audio', { error_type: 'missing_audio' });
     }
     const alignment = data.alignment || data.normalized_alignment;
     const segments = alignment ? buildSegmentsFromAlignment(alignment) : [{ time: 0, text }];
@@ -123,7 +147,7 @@ Deno.serve(async (req) => {
     });
     if (upErr) {
       console.error('[generate-tts] upload error', upErr);
-      return json(500, { error: 'No se pudo subir el audio', detail: upErr.message });
+      return handledError('No se pudo subir el audio', { error_type: 'storage_upload_failed', detail: upErr.message });
     }
     const { data: pub } = supabase.storage.from('audios').getPublicUrl(fileName);
 
@@ -131,9 +155,9 @@ Deno.serve(async (req) => {
     const duration = ends.length ? Math.ceil(ends[ends.length - 1]) : 0;
 
     console.log('[generate-tts] ok, duration:', duration, 'segments:', segments.length);
-    return json(200, { audio_url: pub.publicUrl, duration, transcript: segments });
+    return json(200, { ok: true, audio_url: pub.publicUrl, duration, transcript: segments });
   } catch (e: any) {
     console.error('[generate-tts] fatal', e?.message, e?.stack);
-    return json(500, { error: e?.message || 'Error interno' });
+    return handledError(e?.message || 'Error interno', { error_type: 'unexpected_error' });
   }
 });
