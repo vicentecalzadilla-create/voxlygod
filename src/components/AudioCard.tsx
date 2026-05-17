@@ -14,9 +14,10 @@ interface AudioCardProps {
   autoPlay?: boolean;
   playSignal?: number;
   onNext: () => void;
+  onEdit?: () => void;
 }
 
-const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext }: AudioCardProps) => {
+const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, onEdit }: AudioCardProps) => {
   const [amen, setAmen] = useState(audio.isLiked);
   const [amenBurstKey, setAmenBurstKey] = useState(0);
   const [iconPulseKey, setIconPulseKey] = useState(0);
