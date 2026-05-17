@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MessageCircle, Share2, Bookmark, Play, Pause, SkipForward, Repeat, Repeat1 } from 'lucide-react';
+import { MessageCircle, Share2, Bookmark, Play, Pause, SkipForward, Repeat, Repeat1, Scissors } from 'lucide-react';
 import type { AudioPost } from '@/data/mockData';
 import AudioVisualizer from './AudioVisualizer';
 import ImmersiveEffectsPanel from './ImmersiveEffectsPanel';
