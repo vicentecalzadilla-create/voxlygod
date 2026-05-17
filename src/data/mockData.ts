@@ -16,6 +16,8 @@ export interface AudioPost {
   isSaved: boolean;
   allowImmersiveEffects: boolean;
   audioUrl?: string;
+  transcript?: { time: number; text: string }[];
+  translations?: Record<string, { time: number; text: string }[]>;
 }
 
 export interface Creator {
