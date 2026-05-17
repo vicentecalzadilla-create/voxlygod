@@ -240,11 +240,32 @@ const CreatePage = () => {
         </div>
       )}
 
-      {/* Record / Upload */}
-      <div className="flex gap-3">
+      {/* Mode tabs */}
+      <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-card/60">
+        {([
+          { id: 'record', label: 'Grabar', icon: <Mic className="w-3.5 h-3.5" /> },
+          { id: 'upload', label: 'Subir', icon: <Upload className="w-3.5 h-3.5" /> },
+          { id: 'text', label: 'Desde texto', icon: <Type className="w-3.5 h-3.5" /> },
+        ] as const).map(m => (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => setMode(m.id)}
+            className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-[11px] font-medium transition-all ${
+              mode === m.id ? 'text-primary-foreground gold-glow' : 'text-foreground/70'
+            }`}
+            style={mode === m.id ? { background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))' } : undefined}
+          >
+            {m.icon}{m.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Mode panels */}
+      {mode === 'record' && (
         <button
           onClick={isRecording ? stopRecording : startRecording}
-          className={`flex-1 h-32 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all ${
+          className={`w-full h-32 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all ${
             isRecording ? 'bg-destructive/10 border-2 border-destructive' : 'card-luminous'
           }`}
         >
@@ -259,18 +280,26 @@ const CreatePage = () => {
             {isRecording ? `Detener (${fmt(recordSeconds)})` : audioBlob ? 'Grabar de nuevo' : 'Grabar audio'}
           </span>
         </button>
+      )}
 
-        <label className="flex-1 h-32 rounded-2xl card-luminous flex flex-col items-center justify-center gap-2 hover:shadow-md transition-all cursor-pointer">
+      {mode === 'upload' && (
+        <label className="w-full h-32 rounded-2xl card-luminous flex flex-col items-center justify-center gap-2 hover:shadow-md transition-all cursor-pointer">
           <div className="w-14 h-14 rounded-full flex items-center justify-center"
             style={{ background: 'linear-gradient(135deg, hsl(200 70% 70% / 0.2), hsl(270 50% 65% / 0.2))' }}>
             <Upload className="w-6 h-6 text-accent" />
           </div>
-          <span className="text-xs font-medium">Subir archivo</span>
+          <span className="text-xs font-medium">{audioBlob ? 'Reemplazar archivo' : 'Subir archivo'}</span>
           <input type="file" accept="audio/*" className="hidden" onChange={handleFileUpload} />
         </label>
-      </div>
+      )}
 
-      {audioBlob && (
+      {mode === 'text' && (
+        <TextToAudioPanel
+          onGenerated={(r) => setTtsData({ url: r.audio_url, duration: r.duration, transcript: r.transcript, source: r.source_text, voice: r.voice })}
+        />
+      )}
+
+      {mode !== 'text' && audioBlob && (
         <div className="p-3 rounded-xl glass-border"
           style={{ background: 'linear-gradient(135deg, hsl(38 80% 55% / 0.08), hsl(340 60% 70% / 0.06))' }}>
           <AudioEditTools ref={editorRef} source={audioBlob} />
