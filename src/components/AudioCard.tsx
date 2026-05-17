@@ -307,6 +307,19 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
           </button>
         )}
       </div>
+
+      {/* Lyrics overlay (hides visualizer) */}
+      {lyricsOpen && (
+        <LyricsPanel
+          segments={lyricsSegments}
+          currentTime={currentTime}
+          duration={duration}
+          audioId={audio.id}
+          cachedTranslations={audio.translations}
+          onClose={() => setLyricsOpen(false)}
+          onSeek={(t) => seekTo(audio.id, t)}
+        />
+      )}
     </div>
   );
 };
