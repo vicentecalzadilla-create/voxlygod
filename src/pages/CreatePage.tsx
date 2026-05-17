@@ -237,30 +237,10 @@ const CreatePage = () => {
         </label>
       </div>
 
-      {audioUrl && (
-        <div className="p-3 rounded-xl glass-border space-y-2"
+      {audioBlob && (
+        <div className="p-3 rounded-xl glass-border"
           style={{ background: 'linear-gradient(135deg, hsl(38 80% 55% / 0.08), hsl(340 60% 70% / 0.06))' }}>
-          <audio ref={previewAudioRef} src={audioUrl} crossOrigin="anonymous"
-            onEnded={() => setPreviewPlaying(false)} className="hidden" />
-          <div className="flex items-center gap-3">
-            <button onClick={togglePreview}
-              className="w-10 h-10 rounded-full flex items-center justify-center text-primary-foreground"
-              style={{ background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))' }}>
-              {previewPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-            </button>
-            <div className="flex gap-[2px] items-end h-6 flex-1">
-              {Array.from({ length: 28 }).map((_, i) => (
-                <div key={i} className="w-[2px] rounded-full" style={{
-                  height: `${8 + Math.random() * 16}px`,
-                  background: `hsl(${38 + i * 10} 70% 60%)`,
-                  opacity: previewPlaying ? 1 : 0.5,
-                }} />
-              ))}
-            </div>
-            <span className="text-xs text-primary font-medium">
-              {recordSeconds > 0 ? fmt(recordSeconds) : 'Audio'}
-            </span>
-          </div>
+          <AudioEditTools ref={editorRef} source={audioBlob} />
         </div>
       )}
 
