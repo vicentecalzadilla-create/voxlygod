@@ -35,6 +35,7 @@ const TextToAudioPanel = ({ initialText = '', initialVoice = 'pastor-sereno', on
         body: { text: text.trim(), voice },
       });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       if (!data?.audio_url) throw new Error('Sin respuesta de audio');
       setPreviewUrl(data.audio_url);
       onGenerated({
