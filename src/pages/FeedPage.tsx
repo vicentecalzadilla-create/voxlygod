@@ -15,7 +15,7 @@ interface EditableInfo {
 const FeedPage = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [playSignal, setPlaySignal] = useState(1);
-  const [autoNext, setAutoNext] = useState(true);
+  const [autoNext, setAutoNext] = useState(false);
   const [activeCategory, setActiveCategory] = useState('Para ti');
   const [userAudios, setUserAudios] = useState<AudioPost[]>([]);
   const [ownedIds, setOwnedIds] = useState<Record<string, EditableInfo>>({});
