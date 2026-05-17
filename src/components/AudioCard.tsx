@@ -1,12 +1,32 @@
-import { useEffect, useState } from 'react';
-import { MessageCircle, Share2, Bookmark, Play, Pause, SkipForward, Repeat, Repeat1, Scissors } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { MessageCircle, Share2, Bookmark, Play, Pause, SkipForward, Repeat, Repeat1, Scissors, Type } from 'lucide-react';
 import type { AudioPost } from '@/data/mockData';
 import AudioVisualizer from './AudioVisualizer';
 import ImmersiveEffectsPanel from './ImmersiveEffectsPanel';
 import TranscriptionPanel from './TranscriptionPanel';
 import VoiceSelectorPanel from './VoiceSelectorPanel';
+import LyricsPanel from './LyricsPanel';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAudioPlayback } from '@/audio/AudioPlaybackContext';
+
+// Fallback transcripts for mock audios (synced with TranscriptionPanel mocks)
+const MOCK_TRANSCRIPTS: Record<string, { time: number; text: string }[]> = {
+  '1': [
+    { time: 0, text: 'El Señor es mi pastor, nada me faltará.' },
+    { time: 8, text: 'En lugares de delicados pastos me hará descansar.' },
+    { time: 15, text: 'Junto a aguas de reposo me pastoreará.' },
+    { time: 22, text: 'Confortará mi alma.' },
+    { time: 28, text: 'Me guiará por sendas de justicia por amor de su nombre.' },
+    { time: 38, text: 'Aunque ande en valle de sombra de muerte,' },
+    { time: 45, text: 'no temeré mal alguno, porque tú estarás conmigo.' },
+    { time: 55, text: 'Tu vara y tu cayado me infundirán aliento.' },
+    { time: 65, text: 'Aderezas mesa delante de mí en presencia de mis angustiadores.' },
+    { time: 78, text: 'Unges mi cabeza con aceite; mi copa está rebosando.' },
+    { time: 88, text: 'Ciertamente el bien y la misericordia me seguirán todos los días de mi vida.' },
+    { time: 100, text: 'Y en la casa del Señor moraré por largos días.' },
+  ],
+};
+
 
 interface AudioCardProps {
   audio: AudioPost;
