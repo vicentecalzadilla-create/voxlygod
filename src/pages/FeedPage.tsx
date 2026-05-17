@@ -65,6 +65,8 @@ const FeedPage = () => {
           isSaved: false,
           allowImmersiveEffects: row.allow_immersive_effects ?? true,
           audioUrl: row.audio_url,
+          transcript: row.transcript || undefined,
+          translations: row.translations || undefined,
         };
       });
       setUserAudios(mapped);
