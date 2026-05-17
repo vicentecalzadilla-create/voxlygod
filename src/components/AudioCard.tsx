@@ -87,7 +87,7 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
     : 'linear-gradient(165deg, hsl(200 70% 92%) 0%, hsl(210 40% 96%) 25%, hsl(340 40% 94%) 55%, hsl(38 50% 93%) 100%)';
 
   return (
-    <div className="relative h-[calc(100vh-4rem)] w-full snap-start flex flex-col">
+    <div className="relative h-[calc(100vh-4rem)] w-full snap-start flex flex-col pt-[88px]">
       <div className="absolute inset-0" style={{ background: bgGradient }} />
 
       {/* Visualizer / Lyrics swap area */}
