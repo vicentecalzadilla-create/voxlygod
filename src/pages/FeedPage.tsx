@@ -161,9 +161,26 @@ const FeedPage = () => {
         }}
       >
         {audios.map((audio, i) => (
-          <AudioCard key={audio.id} audio={audio} isActive={i === activeIndex} autoPlay={autoNext} playSignal={playSignal} onNext={handleNext} />
+          <AudioCard
+            key={audio.id}
+            audio={audio}
+            isActive={i === activeIndex}
+            autoPlay={autoNext}
+            playSignal={playSignal}
+            onNext={handleNext}
+            onEdit={ownedIds[audio.id] ? () => setEditing(ownedIds[audio.id]) : undefined}
+          />
         ))}
       </div>
+
+      {editing && (
+        <AudioEditorDialog
+          open={!!editing}
+          onOpenChange={(o) => { if (!o) setEditing(null); }}
+          audio={editing}
+          onSaved={() => { setEditing(null); setReloadKey(k => k + 1); }}
+        />
+      )}
     </div>
   );
 };
