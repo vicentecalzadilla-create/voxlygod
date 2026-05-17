@@ -34,6 +34,7 @@ const CreatePage = () => {
   const timerRef = useRef<number | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const engineConnectedRef = useRef(false);
+  const editorRef = useRef<AudioEditToolsHandle>(null);
 
   const engine = getAudioEffectsEngine();
 
