@@ -146,12 +146,16 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
           <VoiceSelectorPanel audioElement={isCurrent ? playback.audioElement : null} audioId={audio.id} />
           {hasLyrics && (
             <button
-              onClick={() => setLyricsOpen(true)}
-              className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-full card-luminous font-medium transition-all hover:gold-glow"
-              aria-label="Mostrar letra sincronizada"
+              onClick={() => setLyricsOpen(o => !o)}
+              className={`flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-full font-medium transition-all ${
+                lyricsOpen ? 'text-primary-foreground gold-glow' : 'card-luminous hover:gold-glow'
+              }`}
+              style={lyricsOpen ? { background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))' } : undefined}
+              aria-label="Alternar letra sincronizada"
+              aria-pressed={lyricsOpen}
             >
-              <Type className="w-3.5 h-3.5 text-accent" />
-              <span className="gold-text">Letra</span>
+              <Type className={`w-3.5 h-3.5 ${lyricsOpen ? '' : 'text-accent'}`} />
+              <span className={lyricsOpen ? '' : 'gold-text'}>Letra</span>
             </button>
           )}
         </div>
