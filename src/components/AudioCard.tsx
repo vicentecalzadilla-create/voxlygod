@@ -3,7 +3,6 @@ import { MessageCircle, Share2, Bookmark, Play, Pause, SkipForward, Repeat, Repe
 import type { AudioPost } from '@/data/mockData';
 import AudioVisualizer from './AudioVisualizer';
 import ImmersiveEffectsPanel from './ImmersiveEffectsPanel';
-import TranscriptionPanel from './TranscriptionPanel';
 import VoiceSelectorPanel from './VoiceSelectorPanel';
 import LyricsPanel from './LyricsPanel';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -88,7 +87,7 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
     : 'linear-gradient(165deg, hsl(200 70% 92%) 0%, hsl(210 40% 96%) 25%, hsl(340 40% 94%) 55%, hsl(38 50% 93%) 100%)';
 
   return (
-    <div className="relative h-[calc(100vh-4rem)] w-full snap-start flex flex-col">
+    <div className="relative h-[calc(100vh-4rem)] w-full snap-start flex flex-col pt-[88px]">
       <div className="absolute inset-0" style={{ background: bgGradient }} />
 
       {/* Visualizer / Lyrics swap area */}
@@ -141,21 +140,22 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
           ))}
         </div>
 
-        {/* Transcription */}
-        <TranscriptionPanel audioId={audio.id} currentTime={currentTime} isPlaying={isPlaying && isActive} />
-
         {/* Effects & Voice row */}
         <div className="flex items-center gap-2 flex-wrap">
           <ImmersiveEffectsPanel audioId={audio.id} isPlaying={isPlaying && isActive} allowEffects={audio.allowImmersiveEffects} />
           <VoiceSelectorPanel audioElement={isCurrent ? playback.audioElement : null} audioId={audio.id} />
           {hasLyrics && (
             <button
-              onClick={() => setLyricsOpen(true)}
-              className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-full card-luminous font-medium transition-all hover:gold-glow"
-              aria-label="Mostrar letra sincronizada"
+              onClick={() => setLyricsOpen(o => !o)}
+              className={`flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-full font-medium transition-all ${
+                lyricsOpen ? 'text-primary-foreground gold-glow' : 'card-luminous hover:gold-glow'
+              }`}
+              style={lyricsOpen ? { background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))' } : undefined}
+              aria-label="Alternar letra sincronizada"
+              aria-pressed={lyricsOpen}
             >
-              <Type className="w-3.5 h-3.5 text-accent" />
-              <span className="gold-text">Letra</span>
+              <Type className={`w-3.5 h-3.5 ${lyricsOpen ? '' : 'text-accent'}`} />
+              <span className={lyricsOpen ? '' : 'gold-text'}>Letra</span>
             </button>
           )}
         </div>

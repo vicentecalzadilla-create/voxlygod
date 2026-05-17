@@ -35,8 +35,10 @@ const LyricsPanel = ({ segments, currentTime, audioId, cachedTranslations, onSee
 
   const activeIndex = useMemo(() => {
     let idx = 0;
+    // Small lookahead so the highlight feels in sync with what the listener hears
+    const t = currentTime + 0.25;
     for (let i = 0; i < displaySegments.length; i++) {
-      if (displaySegments[i].time <= currentTime + 0.05) idx = i;
+      if (displaySegments[i].time <= t) idx = i;
       else break;
     }
     return idx;
