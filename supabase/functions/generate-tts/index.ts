@@ -49,18 +49,30 @@ function json(status: number, body: unknown) {
   });
 }
 
+function handledError(error: string, detail: Record<string, unknown> = {}) {
+  return json(200, { ok: false, error, fallback: true, ...detail });
+}
+
+function redactHeaders(headers: Headers) {
+  const safe: Record<string, string> = {};
+  for (const [key, value] of headers.entries()) {
+    safe[key] = /key|token|authorization|cookie/i.test(key) ? '[redacted]' : value;
+  }
+  return safe;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
     const apiKey = Deno.env.get('ELEVENLABS_API_KEY');
-    console.log('[generate-tts] start, has key:', !!apiKey);
-    if (!apiKey) return json(500, { error: 'ELEVENLABS_API_KEY no configurada en el servidor' });
+    console.log('[generate-tts] start', { hasElevenLabsKey: Boolean(apiKey), keyLength: apiKey?.length ?? 0 });
+    if (!apiKey) return handledError('ELEVENLABS_API_KEY no configurada en el servidor', { error_type: 'missing_secret' });
 
     const body = await req.json().catch(() => ({}));
     const text: string = (body?.text || '').toString();
     const voice: string = (body?.voice || 'pastor-sereno').toString();
-    if (!text.trim()) return json(400, { error: 'El campo "text" es obligatorio' });
-    if (text.length > 4500) return json(400, { error: 'Texto demasiado largo (máx 4500 caracteres)' });
+    if (!text.trim()) return handledError('El campo "text" es obligatorio', { error_type: 'invalid_text' });
+    if (text.length > 4500) return handledError('Texto demasiado largo (máx 4500 caracteres)', { error_type: 'text_too_long' });
 
     const voiceId = VOICE_MAP[voice] || VOICE_MAP['pastor-sereno'];
     console.log('[generate-tts] voice:', voice, '->', voiceId, 'len:', text.length);
@@ -78,18 +90,30 @@ Deno.serve(async (req) => {
 
     if (!resp.ok) {
       const errTxt = await resp.text();
-      console.error('[generate-tts] ElevenLabs error', resp.status, errTxt);
+      console.error('[generate-tts] ElevenLabs error', {
+        status: resp.status,
+        statusText: resp.statusText,
+        headers: redactHeaders(resp.headers),
+        body: errTxt.slice(0, 2000),
+        voice,
+        voiceId,
+        textLength: text.length,
+      });
       let userMsg = `ElevenLabs ${resp.status}`;
+      let errorType = 'elevenlabs_error';
       if (resp.status === 401) {
         if (/detected_unusual_activity|Free Tier/i.test(errTxt)) {
           userMsg = 'ElevenLabs ha bloqueado la cuenta Free (actividad inusual). Actualiza a un plan de pago en elevenlabs.io o usa otra API key.';
+          errorType = 'account_blocked';
         } else {
           userMsg = 'API key de ElevenLabs inválida';
+          errorType = 'invalid_api_key';
         }
       }
-      else if (resp.status === 402 || resp.status === 429) userMsg = 'Sin créditos / cuota de ElevenLabs agotada';
-      else if (resp.status === 422) userMsg = 'Texto o voz inválidos para ElevenLabs';
-      return json(502, { error: userMsg, status: resp.status, detail: errTxt.slice(0, 500) });
+      else if (resp.status === 402 || resp.status === 429) { userMsg = 'Sin créditos / cuota de ElevenLabs agotada'; errorType = 'quota_exceeded'; }
+      else if (resp.status === 422) { userMsg = 'Texto o voz inválidos para ElevenLabs'; errorType = 'invalid_text_or_voice'; }
+      else if (resp.status >= 500) { userMsg = 'Servicio de ElevenLabs no disponible temporalmente'; errorType = 'provider_unavailable'; }
+      return handledError(userMsg, { error_type: errorType, status: resp.status, detail: errTxt.slice(0, 1000) });
     }
 
     const data = await resp.json();
