@@ -15,6 +15,10 @@ interface UserAudioRow {
   duration: number | null;
   visual_effect: string | null;
   category: string | null;
+  description: string | null;
+  tags: string[] | null;
+  allow_immersive_effects: boolean | null;
+  allow_voice_change: boolean | null;
 }
 
 const ProfilePage = () => {
@@ -31,7 +35,7 @@ const ProfilePage = () => {
     if (!user) { setMyAudios([]); setLoadingAudios(false); return; }
     const { data } = await supabase
       .from('audios')
-      .select('id,title,audio_url,duration,visual_effect,category')
+      .select('id,title,audio_url,duration,visual_effect,category,description,tags,allow_immersive_effects,allow_voice_change')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
     setMyAudios((data as UserAudioRow[]) || []);
@@ -246,7 +250,7 @@ const ProfilePage = () => {
         <AudioEditorDialog
           open={!!editing}
           onOpenChange={(o) => { if (!o) setEditing(null); }}
-          audio={{ id: editing.id, title: editing.title, audio_url: editing.audio_url }}
+          audio={editing}
           onSaved={() => { setEditing(null); loadMyAudios(); }}
         />
       )}

@@ -5,7 +5,12 @@ import AudioCard from '@/components/AudioCard';
 import AudioEditorDialog from '@/components/AudioEditorDialog';
 import { supabase } from '@/integrations/supabase/client';
 
-interface EditableInfo { id: string; title: string; audio_url: string }
+interface EditableInfo {
+  id: string; title: string; audio_url: string;
+  description?: string | null; tags?: string[] | null;
+  visual_effect?: string | null; allow_immersive_effects?: boolean | null;
+  allow_voice_change?: boolean | null; category?: string | null;
+}
 
 const FeedPage = () => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -35,7 +40,12 @@ const FeedPage = () => {
       const owned: Record<string, EditableInfo> = {};
       const mapped: AudioPost[] = data.map((row: any) => {
         if (user && row.user_id === user.id) {
-          owned[row.id] = { id: row.id, title: row.title, audio_url: row.audio_url };
+          owned[row.id] = {
+            id: row.id, title: row.title, audio_url: row.audio_url,
+            description: row.description, tags: row.tags,
+            visual_effect: row.visual_effect, allow_immersive_effects: row.allow_immersive_effects,
+            allow_voice_change: row.allow_voice_change, category: row.category,
+          };
         }
         return {
           id: row.id,

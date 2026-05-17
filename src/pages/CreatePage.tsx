@@ -1,17 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic, Upload, Wand2, X, Sparkles, Volume2, Square, Play, Pause, AlertCircle } from 'lucide-react';
+import { Mic, Upload, Wand2, X, Sparkles, Volume2, Square, AlertCircle } from 'lucide-react';
 import { EFFECTS_LIST, getAudioEffectsEngine, type EffectType } from '@/audio/AudioEffectsEngine';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import AudioEditTools, { type AudioEditToolsHandle } from '@/components/AudioEditTools';
+import { VISUAL_EFFECTS } from '@/audio/audioEditUtils';
 
-const visualEffects = [
-  { id: 'light-rays', label: 'Rayos de luz', emoji: '✨' },
-  { id: 'cross', label: 'Cruz', emoji: '✝️' },
-  { id: 'clouds', label: 'Cielo', emoji: '☁️' },
-  { id: 'candles', label: 'Velas', emoji: '🕯️' },
-  { id: 'bible', label: 'Biblia', emoji: '📖' },
-];
+const visualEffects = VISUAL_EFFECTS;
 
 const CreatePage = () => {
   const navigate = useNavigate();
@@ -38,6 +34,7 @@ const CreatePage = () => {
   const timerRef = useRef<number | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const engineConnectedRef = useRef(false);
+  const editorRef = useRef<AudioEditToolsHandle>(null);
 
   const engine = getAudioEffectsEngine();
 
@@ -155,8 +152,17 @@ const CreatePage = () => {
         return;
       }
 
-      const t = audioBlob.type;
-      const ext = t.includes('webm') ? 'webm'
+      // Use edited version if user trimmed or appended a segment
+      const edited = await editorRef.current?.buildEdited();
+      const useEdited = !!(edited && edited.edited);
+      const uploadBlob: Blob = useEdited ? edited!.blob : audioBlob;
+      const finalDuration = edited
+        ? Math.round(edited.duration)
+        : Math.round(recordSeconds || 0);
+
+      const t = uploadBlob.type;
+      const ext = useEdited ? 'wav'
+        : t.includes('webm') ? 'webm'
         : t.includes('mpeg') || t.includes('mp3') ? 'mp3'
         : t.includes('ogg') ? 'ogg'
         : t.includes('wav') ? 'wav'
@@ -164,8 +170,8 @@ const CreatePage = () => {
         : t.includes('aac') ? 'aac'
         : 'webm';
       const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('audios').upload(fileName, audioBlob, {
-        contentType: audioBlob.type || 'audio/webm',
+      const { error: upErr } = await supabase.storage.from('audios').upload(fileName, uploadBlob, {
+        contentType: uploadBlob.type || 'audio/webm',
         upsert: false,
       });
       if (upErr) throw upErr;
@@ -182,7 +188,7 @@ const CreatePage = () => {
         allow_immersive_effects: allowImmersive,
         allow_voice_change: allowVoiceChange,
         user_id: user.id,
-        duration: Math.round(recordSeconds || 0),
+        duration: finalDuration,
       });
       if (insErr) throw insErr;
       toast({ title: '🎉 Publicado', description: 'Tu audio ya está disponible en el feed.' });
@@ -241,30 +247,10 @@ const CreatePage = () => {
         </label>
       </div>
 
-      {audioUrl && (
-        <div className="p-3 rounded-xl glass-border space-y-2"
+      {audioBlob && (
+        <div className="p-3 rounded-xl glass-border"
           style={{ background: 'linear-gradient(135deg, hsl(38 80% 55% / 0.08), hsl(340 60% 70% / 0.06))' }}>
-          <audio ref={previewAudioRef} src={audioUrl} crossOrigin="anonymous"
-            onEnded={() => setPreviewPlaying(false)} className="hidden" />
-          <div className="flex items-center gap-3">
-            <button onClick={togglePreview}
-              className="w-10 h-10 rounded-full flex items-center justify-center text-primary-foreground"
-              style={{ background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))' }}>
-              {previewPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-            </button>
-            <div className="flex gap-[2px] items-end h-6 flex-1">
-              {Array.from({ length: 28 }).map((_, i) => (
-                <div key={i} className="w-[2px] rounded-full" style={{
-                  height: `${8 + Math.random() * 16}px`,
-                  background: `hsl(${38 + i * 10} 70% 60%)`,
-                  opacity: previewPlaying ? 1 : 0.5,
-                }} />
-              ))}
-            </div>
-            <span className="text-xs text-primary font-medium">
-              {recordSeconds > 0 ? fmt(recordSeconds) : 'Audio'}
-            </span>
-          </div>
+          <AudioEditTools ref={editorRef} source={audioBlob} />
         </div>
       )}
 
