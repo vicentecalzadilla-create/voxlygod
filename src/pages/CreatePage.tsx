@@ -135,8 +135,8 @@ const CreatePage = () => {
   };
 
   const handlePublish = async () => {
-    if (!audioBlob) {
-      toast({ title: 'Sin audio', description: 'Graba o sube un audio primero.', variant: 'destructive' });
+    if (!audioBlob && !ttsData) {
+      toast({ title: 'Sin audio', description: 'Graba, sube un archivo o genera desde texto.', variant: 'destructive' });
       return;
     }
     if (!title.trim()) {
@@ -156,53 +156,72 @@ const CreatePage = () => {
         return;
       }
 
-      // Use edited version if user trimmed or appended a segment
-      const edited = await editorRef.current?.buildEdited();
-      const useEdited = !!(edited && edited.edited);
-      const uploadBlob: Blob = useEdited ? edited!.blob : audioBlob;
-      const finalDuration = edited
-        ? Math.round(edited.duration)
-        : Math.round(recordSeconds || 0);
+      let finalUrl: string;
+      let finalDuration: number;
+      let transcriptForRow: TranscriptSegment[] | null = null;
+      let sourceTextForRow: string | null = null;
+      let voiceForRow: string | null = null;
 
-      const t = uploadBlob.type;
-      const ext = useEdited ? 'wav'
-        : t.includes('webm') ? 'webm'
-        : t.includes('mpeg') || t.includes('mp3') ? 'mp3'
-        : t.includes('ogg') ? 'ogg'
-        : t.includes('wav') ? 'wav'
-        : t.includes('m4a') || t.includes('mp4') ? 'm4a'
-        : t.includes('aac') ? 'aac'
-        : 'webm';
-      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('audios').upload(fileName, uploadBlob, {
-        contentType: uploadBlob.type || 'audio/webm',
-        upsert: false,
-      });
-      if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from('audios').getPublicUrl(fileName);
+      if (mode === 'text' && ttsData) {
+        finalUrl = ttsData.url;
+        finalDuration = ttsData.duration;
+        transcriptForRow = ttsData.transcript;
+        sourceTextForRow = ttsData.source;
+        voiceForRow = ttsData.voice;
+      } else {
+        if (!audioBlob) throw new Error('Sin audio');
+        // Use edited version if user trimmed or appended a segment
+        const edited = await editorRef.current?.buildEdited();
+        const useEdited = !!(edited && edited.edited);
+        const uploadBlob: Blob = useEdited ? edited!.blob : audioBlob;
+        finalDuration = edited
+          ? Math.round(edited.duration)
+          : Math.round(recordSeconds || 0);
+
+        const t = uploadBlob.type;
+        const ext = useEdited ? 'wav'
+          : t.includes('webm') ? 'webm'
+          : t.includes('mpeg') || t.includes('mp3') ? 'mp3'
+          : t.includes('ogg') ? 'ogg'
+          : t.includes('wav') ? 'wav'
+          : t.includes('m4a') || t.includes('mp4') ? 'm4a'
+          : t.includes('aac') ? 'aac'
+          : 'webm';
+        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from('audios').upload(fileName, uploadBlob, {
+          contentType: uploadBlob.type || 'audio/webm',
+          upsert: false,
+        });
+        if (upErr) throw upErr;
+        finalUrl = supabase.storage.from('audios').getPublicUrl(fileName).data.publicUrl;
+      }
+
       const { error: insErr } = await supabase.from('audios').insert({
         title,
         description,
         creator_name: 'Creador',
-        creator_avatar: '🙏',
+        creator_avatar: voiceForRow ? '✨' : '🙏',
         tags,
         category: 'General',
         visual_effect: selectedEffect,
-        audio_url: pub.publicUrl,
+        audio_url: finalUrl,
         allow_immersive_effects: allowImmersive,
         allow_voice_change: allowVoiceChange,
         user_id: user.id,
         duration: finalDuration,
+        transcript: transcriptForRow,
+        source_text: sourceTextForRow,
+        tts_voice: voiceForRow,
       });
       if (insErr) throw insErr;
       toast({ title: '🎉 Publicado', description: 'Tu audio ya está disponible en el feed.' });
-      setTitle(''); setDescription(''); setTags([]); setAudioBlob(null);
+      setTitle(''); setDescription(''); setTags([]); setAudioBlob(null); setTtsData(null);
       if (audioUrl) URL.revokeObjectURL(audioUrl);
       setAudioUrl(null); setRecordSeconds(0);
       navigate('/');
     } catch (err: any) {
       console.error(err);
-      toast({ title: 'Error al publicar', description: 'Inténtalo de nuevo más tarde.', variant: 'destructive' });
+      toast({ title: 'Error al publicar', description: err?.message || 'Inténtalo de nuevo más tarde.', variant: 'destructive' });
     } finally {
       setUploading(false);
     }
