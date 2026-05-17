@@ -38,6 +38,8 @@ const AudioEditorDialog = ({ open, onOpenChange, audio, onSaved }: Props) => {
   const [allowVoiceChange, setAllowVoiceChange] = useState(audio.allow_voice_change ?? true);
   const [allowImmersive, setAllowImmersive] = useState(audio.allow_immersive_effects ?? true);
   const [saving, setSaving] = useState(false);
+  const [editMode, setEditMode] = useState<'audio' | 'text'>('audio');
+  const [ttsData, setTtsData] = useState<{ url: string; duration: number; transcript: TranscriptSegment[]; source: string; voice: string } | null>(null);
   const editorRef = useRef<AudioEditToolsHandle>(null);
 
   useEffect(() => {
