@@ -23,6 +23,7 @@ const ProfilePage = () => {
   const playback = useAudioPlayback();
   const [myAudios, setMyAudios] = useState<UserAudioRow[]>([]);
   const [loadingAudios, setLoadingAudios] = useState(true);
+  const [editing, setEditing] = useState<UserAudioRow | null>(null);
 
   const loadMyAudios = async () => {
     setLoadingAudios(true);
