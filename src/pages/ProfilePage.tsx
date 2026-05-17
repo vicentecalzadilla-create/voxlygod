@@ -206,6 +206,9 @@ const ProfilePage = () => {
                     <p className="text-xs font-semibold truncate">{a.title}</p>
                     <p className="text-[10px] text-muted-foreground">{a.category} · {a.duration || 0}s</p>
                   </div>
+                  <button onClick={() => setEditing(a)} className="w-8 h-8 rounded-full hover:bg-primary/10 flex items-center justify-center" aria-label="Editar audio">
+                    <Scissors className="w-3.5 h-3.5 text-primary" />
+                  </button>
                   <button onClick={() => handleRename(a)} className="w-8 h-8 rounded-full hover:bg-primary/10 flex items-center justify-center" aria-label="Editar título">
                     <Pencil className="w-3.5 h-3.5 text-primary" />
                   </button>
