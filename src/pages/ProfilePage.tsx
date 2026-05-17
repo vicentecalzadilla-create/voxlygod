@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Settings, Bookmark, Clock, LogOut, ChevronRight, Sun, Moon, Play, Pause, Pencil, Trash2 } from 'lucide-react';
+import { Settings, Bookmark, Clock, LogOut, ChevronRight, Sun, Moon, Play, Pause, Pencil, Trash2, Scissors } from 'lucide-react';
+import AudioEditorDialog from '@/components/AudioEditorDialog';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/integrations/supabase/client';
