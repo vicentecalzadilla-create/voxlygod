@@ -2,7 +2,10 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { ToggleLeft, ToggleRight } from 'lucide-react';
 import { mockAudios, categories, type AudioPost } from '@/data/mockData';
 import AudioCard from '@/components/AudioCard';
+import AudioEditorDialog from '@/components/AudioEditorDialog';
 import { supabase } from '@/integrations/supabase/client';
+
+interface EditableInfo { id: string; title: string; audio_url: string }
 
 const FeedPage = () => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -10,6 +13,9 @@ const FeedPage = () => {
   const [autoNext, setAutoNext] = useState(true);
   const [activeCategory, setActiveCategory] = useState('Para ti');
   const [userAudios, setUserAudios] = useState<AudioPost[]>([]);
+  const [ownedIds, setOwnedIds] = useState<Record<string, EditableInfo>>({});
+  const [editing, setEditing] = useState<EditableInfo | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeIndexRef = useRef(0);
   const scrollRafRef = useRef<number | null>(null);
