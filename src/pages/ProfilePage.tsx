@@ -241,6 +241,15 @@ const ProfilePage = () => {
       <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 p-3 rounded-xl text-destructive hover:bg-destructive/10 transition-colors text-sm">
         <LogOut className="w-4 h-4" /> Cerrar sesión
       </button>
+
+      {editing && (
+        <AudioEditorDialog
+          open={!!editing}
+          onOpenChange={(o) => { if (!o) setEditing(null); }}
+          audio={{ id: editing.id, title: editing.title, audio_url: editing.audio_url }}
+          onSaved={() => { setEditing(null); loadMyAudios(); }}
+        />
+      )}
     </div>
   );
 };
