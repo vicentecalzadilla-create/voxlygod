@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { X, Languages, Loader2 } from 'lucide-react';
+import { Languages, Loader2 } from 'lucide-react';
 import type { TranscriptSegment } from '@/audio/ttsVoices';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -7,10 +7,8 @@ import { toast } from '@/hooks/use-toast';
 interface Props {
   segments: TranscriptSegment[];
   currentTime: number;
-  duration: number;
   audioId: string;
   cachedTranslations?: Record<string, TranscriptSegment[]>;
-  onClose: () => void;
   onSeek?: (time: number) => void;
 }
 
@@ -23,11 +21,12 @@ const LANGS: { id: Lang; label: string; flag: string }[] = [
   { id: 'es', label: 'ES', flag: '🇪🇸' },
 ];
 
-const LyricsPanel = ({ segments, currentTime, duration, audioId, cachedTranslations, onClose, onSeek }: Props) => {
+const WINDOW = 2; // lines before/after active
+
+const LyricsPanel = ({ segments, currentTime, audioId, cachedTranslations, onSeek }: Props) => {
   const [lang, setLang] = useState<Lang>('original');
   const [cache, setCache] = useState<Record<string, TranscriptSegment[]>>(cachedTranslations || {});
   const [loadingLang, setLoadingLang] = useState<Lang | null>(null);
-  const activeRef = useRef<HTMLDivElement>(null);
 
   const displaySegments = useMemo(() => {
     if (lang === 'original') return segments;
@@ -43,9 +42,11 @@ const LyricsPanel = ({ segments, currentTime, duration, audioId, cachedTranslati
     return idx;
   }, [displaySegments, currentTime]);
 
-  useEffect(() => {
-    activeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [activeIndex]);
+  const visible = useMemo(() => {
+    const start = Math.max(0, activeIndex - WINDOW);
+    const end = Math.min(displaySegments.length, activeIndex + WINDOW + 1);
+    return displaySegments.slice(start, end).map((seg, i) => ({ seg, absIdx: start + i }));
+  }, [displaySegments, activeIndex]);
 
   const handleLang = async (next: Lang) => {
     if (next === 'original' || cache[next]) { setLang(next); return; }
@@ -58,7 +59,6 @@ const LyricsPanel = ({ segments, currentTime, duration, audioId, cachedTranslati
       const translated: TranscriptSegment[] = data?.segments || [];
       setCache(c => ({ ...c, [next]: translated }));
       setLang(next);
-      // Try to cache server-side (best-effort, owner only)
       supabase.from('audios').update({
         translations: { ...(cachedTranslations || {}), ...cache, [next]: translated },
       }).eq('id', audioId).then(() => {});
@@ -71,20 +71,18 @@ const LyricsPanel = ({ segments, currentTime, duration, audioId, cachedTranslati
   };
 
   return (
-    <div className="absolute inset-0 z-20 flex flex-col bg-background/95 backdrop-blur-xl">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
-        <div className="flex items-center gap-2">
-          <Languages className="w-4 h-4 text-accent" />
-          <h3 className="text-sm font-semibold gold-text">Letra sincronizada</h3>
-        </div>
-        <button onClick={onClose} className="w-8 h-8 rounded-full bg-secondary/70 flex items-center justify-center" aria-label="Cerrar">
-          <X className="w-4 h-4" />
-        </button>
-      </div>
+    <div className="absolute inset-0 flex flex-col items-stretch animate-fade-in">
+      {/* Soft glow overlay backdrop */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center, hsl(var(--primary) / 0.10), transparent 70%)',
+        }}
+      />
 
       {/* Language chips */}
-      <div className="flex gap-1.5 px-4 py-2 overflow-x-auto scrollbar-hide">
+      <div className="relative flex items-center justify-center gap-1.5 px-4 pt-3">
+        <Languages className="w-3.5 h-3.5 text-accent mr-1" />
         {LANGS.map(l => {
           const active = lang === l.id;
           const isLoading = loadingLang === l.id;
@@ -93,8 +91,8 @@ const LyricsPanel = ({ segments, currentTime, duration, audioId, cachedTranslati
               key={l.id}
               onClick={() => handleLang(l.id)}
               disabled={isLoading}
-              className={`flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition-all ${
-                active ? 'text-primary-foreground gold-glow' : 'bg-secondary/70 text-secondary-foreground'
+              className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap transition-all ${
+                active ? 'text-primary-foreground gold-glow' : 'bg-secondary/60 text-secondary-foreground'
               }`}
               style={active ? { background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))' } : undefined}
             >
@@ -106,41 +104,38 @@ const LyricsPanel = ({ segments, currentTime, duration, audioId, cachedTranslati
         })}
       </div>
 
-      {/* Lyrics list */}
-      <div className="flex-1 overflow-y-auto px-6 py-8 space-y-4">
+      {/* Lyrics window */}
+      <div className="relative flex-1 flex flex-col items-center justify-center px-6 gap-2 overflow-hidden">
         {displaySegments.length === 0 && (
-          <p className="text-center text-xs text-muted-foreground mt-10">No hay transcripción disponible para este audio.</p>
+          <p className="text-center text-xs text-muted-foreground">No hay transcripción disponible.</p>
         )}
-        {displaySegments.map((seg, i) => {
-          const isActive = i === activeIndex;
-          const isPast = i < activeIndex;
+        {visible.map(({ seg, absIdx }) => {
+          const isActive = absIdx === activeIndex;
+          const distance = Math.abs(absIdx - activeIndex);
+          const isPast = absIdx < activeIndex;
           return (
-            <div
-              key={i}
-              ref={isActive ? activeRef : undefined}
+            <button
+              key={absIdx}
               onClick={() => onSeek?.(seg.time)}
-              className={`cursor-pointer transition-all duration-300 ${
+              className={`block w-full text-center font-serif leading-snug transition-all duration-500 ${
                 isActive
-                  ? 'scale-[1.04] gold-text font-bold text-lg'
+                  ? 'gold-text font-bold text-xl scale-105'
                   : isPast
-                    ? 'text-muted-foreground/70 text-base'
-                    : 'text-foreground/50 text-base'
+                    ? 'text-muted-foreground/60'
+                    : 'text-foreground/55'
               }`}
-              style={isActive ? {
-                textShadow: '0 0 18px hsl(var(--primary) / 0.55), 0 0 36px hsl(var(--primary) / 0.25)',
-              } : undefined}
+              style={{
+                opacity: isActive ? 1 : Math.max(0.35, 1 - distance * 0.25),
+                fontSize: isActive ? undefined : distance === 1 ? '0.95rem' : '0.8rem',
+                textShadow: isActive
+                  ? '0 0 18px hsl(var(--primary) / 0.55), 0 0 36px hsl(var(--primary) / 0.25)'
+                  : undefined,
+              }}
             >
-              <p className="font-serif leading-relaxed">{seg.text}</p>
-            </div>
+              {seg.text}
+            </button>
           );
         })}
-      </div>
-
-      {/* Progress hint */}
-      <div className="px-4 py-2 border-t border-border/40 text-center">
-        <p className="text-[10px] text-muted-foreground tabular-nums">
-          {Math.floor(currentTime / 60)}:{(currentTime % 60 | 0).toString().padStart(2, '0')} / {Math.floor(duration / 60)}:{(duration % 60 | 0).toString().padStart(2, '0')}
-        </p>
       </div>
     </div>
   );
