@@ -166,8 +166,9 @@ const FeedPage = () => {
       {/* Feed */}
       <div
         ref={scrollRef}
-        className="h-full overflow-y-auto snap-y snap-mandatory"
+        className={`h-full overflow-y-auto ${autoNext ? 'snap-y snap-mandatory' : ''}`}
         onScroll={() => {
+          if (!autoNext) return;
           if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
           scrollRafRef.current = requestAnimationFrame(updateActiveFromScroll);
         }}
@@ -179,7 +180,7 @@ const FeedPage = () => {
             isActive={i === activeIndex}
             autoPlay={autoNext}
             playSignal={playSignal}
-            onNext={handleNext}
+            onNext={autoNext ? handleNext : () => {}}
             onEdit={ownedIds[audio.id] ? () => setEditing(ownedIds[audio.id]) : undefined}
           />
         ))}
