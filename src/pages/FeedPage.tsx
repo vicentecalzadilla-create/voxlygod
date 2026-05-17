@@ -40,7 +40,12 @@ const FeedPage = () => {
       const owned: Record<string, EditableInfo> = {};
       const mapped: AudioPost[] = data.map((row: any) => {
         if (user && row.user_id === user.id) {
-          owned[row.id] = { id: row.id, title: row.title, audio_url: row.audio_url };
+          owned[row.id] = {
+            id: row.id, title: row.title, audio_url: row.audio_url,
+            description: row.description, tags: row.tags,
+            visual_effect: row.visual_effect, allow_immersive_effects: row.allow_immersive_effects,
+            allow_voice_change: row.allow_voice_change, category: row.category,
+          };
         }
         return {
           id: row.id,
