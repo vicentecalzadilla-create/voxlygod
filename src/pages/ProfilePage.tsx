@@ -15,6 +15,10 @@ interface UserAudioRow {
   duration: number | null;
   visual_effect: string | null;
   category: string | null;
+  description: string | null;
+  tags: string[] | null;
+  allow_immersive_effects: boolean | null;
+  allow_voice_change: boolean | null;
 }
 
 const ProfilePage = () => {
