@@ -250,7 +250,7 @@ const ProfilePage = () => {
         <AudioEditorDialog
           open={!!editing}
           onOpenChange={(o) => { if (!o) setEditing(null); }}
-          audio={{ id: editing.id, title: editing.title, audio_url: editing.audio_url }}
+          audio={editing}
           onSaved={() => { setEditing(null); loadMyAudios(); }}
         />
       )}
