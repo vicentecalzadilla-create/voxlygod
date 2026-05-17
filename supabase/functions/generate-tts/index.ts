@@ -80,7 +80,13 @@ Deno.serve(async (req) => {
       const errTxt = await resp.text();
       console.error('[generate-tts] ElevenLabs error', resp.status, errTxt);
       let userMsg = `ElevenLabs ${resp.status}`;
-      if (resp.status === 401) userMsg = 'API key de ElevenLabs inválida';
+      if (resp.status === 401) {
+        if (/detected_unusual_activity|Free Tier/i.test(errTxt)) {
+          userMsg = 'ElevenLabs ha bloqueado la cuenta Free (actividad inusual). Actualiza a un plan de pago en elevenlabs.io o usa otra API key.';
+        } else {
+          userMsg = 'API key de ElevenLabs inválida';
+        }
+      }
       else if (resp.status === 402 || resp.status === 429) userMsg = 'Sin créditos / cuota de ElevenLabs agotada';
       else if (resp.status === 422) userMsg = 'Texto o voz inválidos para ElevenLabs';
       return json(502, { error: userMsg, status: resp.status, detail: errTxt.slice(0, 500) });
