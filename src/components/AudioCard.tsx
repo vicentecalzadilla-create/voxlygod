@@ -68,7 +68,8 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
       // Always restart from 0:00 when track becomes active via scroll/auto
       playTrack(audio, { restart: true }).catch(() => {});
     }
-  }, [audio, autoPlay, isActive, playSignal, playTrack]);
+    if (!isActive && lyricsOpen) setLyricsOpen(false);
+  }, [audio, autoPlay, isActive, playSignal, playTrack, lyricsOpen]);
 
   useEffect(() => {
     if (isActive && playback.endedTrackId === audio.id && playback.endedSignal > 0) {
@@ -90,9 +91,22 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
     <div className="relative h-[calc(100vh-4rem)] w-full snap-start flex flex-col">
       <div className="absolute inset-0" style={{ background: bgGradient }} />
 
-      {/* Visualizer */}
-      <div className="relative flex-1 flex items-center justify-center">
-        <AudioVisualizer isPlaying={isPlaying && isActive} effect={audio.visualEffect} />
+      {/* Visualizer / Lyrics swap area */}
+      <div className="relative flex-1 flex items-center justify-center overflow-hidden">
+        <div
+          className={`absolute inset-0 transition-opacity duration-500 ${lyricsOpen ? 'opacity-0' : 'opacity-100'}`}
+        >
+          <AudioVisualizer isPlaying={isPlaying && isActive} effect={audio.visualEffect} />
+        </div>
+        {lyricsOpen && hasLyrics && (
+          <LyricsPanel
+            segments={lyricsSegments}
+            currentTime={currentTime}
+            audioId={audio.id}
+            cachedTranslations={audio.translations}
+            onSeek={(t) => seekTo(audio.id, t)}
+          />
+        )}
       </div>
 
       {/* Content overlay */}
@@ -308,18 +322,6 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
         )}
       </div>
 
-      {/* Lyrics overlay (hides visualizer) */}
-      {lyricsOpen && (
-        <LyricsPanel
-          segments={lyricsSegments}
-          currentTime={currentTime}
-          duration={duration}
-          audioId={audio.id}
-          cachedTranslations={audio.translations}
-          onClose={() => setLyricsOpen(false)}
-          onSeek={(t) => seekTo(audio.id, t)}
-        />
-      )}
     </div>
   );
 };
