@@ -5,7 +5,12 @@ import AudioCard from '@/components/AudioCard';
 import AudioEditorDialog from '@/components/AudioEditorDialog';
 import { supabase } from '@/integrations/supabase/client';
 
-interface EditableInfo { id: string; title: string; audio_url: string }
+interface EditableInfo {
+  id: string; title: string; audio_url: string;
+  description?: string | null; tags?: string[] | null;
+  visual_effect?: string | null; allow_immersive_effects?: boolean | null;
+  allow_voice_change?: boolean | null; category?: string | null;
+}
 
 const FeedPage = () => {
   const [activeIndex, setActiveIndex] = useState(0);
