@@ -259,6 +259,17 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
           <Bookmark className={`w-6 h-6 transition-colors ${saved ? 'fill-primary text-primary' : 'text-foreground/50'}`} />
           <span className="text-[10px] text-foreground/70">{saved ? 'Guardado' : 'Guardar'}</span>
         </button>
+        {onEdit && (
+          <button onClick={onEdit} className="flex flex-col items-center gap-0.5" aria-label="Editar audio">
+            <span
+              className="w-9 h-9 rounded-full flex items-center justify-center text-primary-foreground gold-glow"
+              style={{ background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))' }}
+            >
+              <Scissors className="w-4 h-4" />
+            </span>
+            <span className="text-[10px] text-primary font-medium">Editar</span>
+          </button>
+        )}
       </div>
     </div>
   );
