@@ -29,6 +29,8 @@ const CreatePage = () => {
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [micError, setMicError] = useState<string | null>(null);
+  const [mode, setMode] = useState<'record' | 'upload' | 'text'>('record');
+  const [ttsData, setTtsData] = useState<{ url: string; duration: number; transcript: TranscriptSegment[]; source: string; voice: string } | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
