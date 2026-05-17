@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
     const audioBase64: string | undefined = data.audio_base64;
     if (!audioBase64) {
       console.error('[generate-tts] missing audio_base64', Object.keys(data));
-      return json(502, { error: 'Respuesta de ElevenLabs sin audio' });
+      return handledError('Respuesta de ElevenLabs sin audio', { error_type: 'missing_audio' });
     }
     const alignment = data.alignment || data.normalized_alignment;
     const segments = alignment ? buildSegmentsFromAlignment(alignment) : [{ time: 0, text }];
@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
     });
     if (upErr) {
       console.error('[generate-tts] upload error', upErr);
-      return json(500, { error: 'No se pudo subir el audio', detail: upErr.message });
+      return handledError('No se pudo subir el audio', { error_type: 'storage_upload_failed', detail: upErr.message });
     }
     const { data: pub } = supabase.storage.from('audios').getPublicUrl(fileName);
 
@@ -155,9 +155,9 @@ Deno.serve(async (req) => {
     const duration = ends.length ? Math.ceil(ends[ends.length - 1]) : 0;
 
     console.log('[generate-tts] ok, duration:', duration, 'segments:', segments.length);
-    return json(200, { audio_url: pub.publicUrl, duration, transcript: segments });
+    return json(200, { ok: true, audio_url: pub.publicUrl, duration, transcript: segments });
   } catch (e: any) {
     console.error('[generate-tts] fatal', e?.message, e?.stack);
-    return json(500, { error: e?.message || 'Error interno' });
+    return handledError(e?.message || 'Error interno', { error_type: 'unexpected_error' });
   }
 });
