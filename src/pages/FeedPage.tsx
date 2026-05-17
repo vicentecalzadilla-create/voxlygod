@@ -25,35 +25,43 @@ const FeedPage = () => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       const { data } = await supabase
         .from('audios')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
       if (cancelled || !data) return;
-      const mapped: AudioPost[] = data.map((row: any) => ({
-        id: row.id,
-        title: row.title,
-        description: row.description || '',
-        creatorName: row.creator_name,
-        creatorAvatar: row.creator_avatar || '🙏',
-        duration: row.duration || 0,
-        likes: row.likes || 0,
-        comments: row.comments || 0,
-        shares: row.shares || 0,
-        tags: row.tags || [],
-        verse: row.verse || undefined,
-        category: row.category || 'General',
-        visualEffect: (row.visual_effect || 'light-rays') as AudioPost['visualEffect'],
-        isLiked: false,
-        isSaved: false,
-        allowImmersiveEffects: row.allow_immersive_effects ?? true,
-        audioUrl: row.audio_url,
-      }));
+      const owned: Record<string, EditableInfo> = {};
+      const mapped: AudioPost[] = data.map((row: any) => {
+        if (user && row.user_id === user.id) {
+          owned[row.id] = { id: row.id, title: row.title, audio_url: row.audio_url };
+        }
+        return {
+          id: row.id,
+          title: row.title,
+          description: row.description || '',
+          creatorName: row.creator_name,
+          creatorAvatar: row.creator_avatar || '🙏',
+          duration: row.duration || 0,
+          likes: row.likes || 0,
+          comments: row.comments || 0,
+          shares: row.shares || 0,
+          tags: row.tags || [],
+          verse: row.verse || undefined,
+          category: row.category || 'General',
+          visualEffect: (row.visual_effect || 'light-rays') as AudioPost['visualEffect'],
+          isLiked: false,
+          isSaved: false,
+          allowImmersiveEffects: row.allow_immersive_effects ?? true,
+          audioUrl: row.audio_url,
+        };
+      });
       setUserAudios(mapped);
+      setOwnedIds(owned);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [reloadKey]);
 
   // Autoplay first track once mounted
   useEffect(() => {
