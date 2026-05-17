@@ -275,61 +275,122 @@ class AudioEffectsEngine {
         break;
       }
       case 'soft-echo': {
-        const delay = ctx.createDelay(1);
-        delay.delayTime.value = 0.25;
-        const feedback = ctx.createGain();
-        feedback.gain.value = 0.3;
+        // "Eco Suave" — warm whisper layer overlaid on top of the original audio.
+        // Parallel intimate-whisper voice (low-pass + presence + soft reverb + slow breath tremolo)
+        // mixed UNDER the dry signal so it sounds like a close warm whisper accompanying the voice.
+        const dry = ctx.createGain();
+        dry.gain.value = 1.0;
+
+        // Whisper-shaped parallel branch
+        const whisperLP = ctx.createBiquadFilter();
+        whisperLP.type = 'lowpass';
+        whisperLP.frequency.value = 3200;
+        whisperLP.Q.value = 0.7;
+
+        const whisperHP = ctx.createBiquadFilter();
+        whisperHP.type = 'highpass';
+        whisperHP.frequency.value = 220;
+
+        const presence = ctx.createBiquadFilter();
+        presence.type = 'peaking';
+        presence.frequency.value = 2200;
+        presence.gain.value = 3;
+        presence.Q.value = 1.1;
+
+        const warmReverb = ctx.createConvolver();
+        warmReverb.buffer = this.generateImpulseResponse(1.6, 3.2);
+
+        // Slow tremolo to simulate soft breath
+        const tremolo = ctx.createGain();
+        tremolo.gain.value = 0.35;
+        const lfo = ctx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.value = 0.6;
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.value = 0.08;
+        lfo.connect(lfoGain);
+        lfoGain.connect(tremolo.gain);
+        lfo.start();
+        this.lfoNode = lfo;
+
+        const whisperLevel = ctx.createGain();
+        whisperLevel.gain.value = 0.45;
+
         const merger = ctx.createGain();
 
-        lastNode.connect(merger);
-        lastNode.connect(delay);
-        delay.connect(feedback);
-        feedback.connect(delay);
-        delay.connect(merger);
-        this.effectNodes.push(delay, feedback, merger);
+        lastNode.connect(dry);
+        dry.connect(merger);
+
+        lastNode.connect(whisperHP);
+        whisperHP.connect(whisperLP);
+        whisperLP.connect(presence);
+        presence.connect(warmReverb);
+        warmReverb.connect(tremolo);
+        tremolo.connect(whisperLevel);
+        whisperLevel.connect(merger);
+
+        this.effectNodes.push(dry, whisperHP, whisperLP, presence, warmReverb, tremolo, lfoGain, whisperLevel, merger);
         lastNode = merger;
         break;
       }
       case 'whisper-echo': {
-        // Intimate close whisper: warm low-pass + short delay + light reverb
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 3800;
-        filter.Q.value = 0.7;
-
-        const presence = ctx.createBiquadFilter();
-        presence.type = 'peaking';
-        presence.frequency.value = 1800;
-        presence.gain.value = 2.5;
-        presence.Q.value = 1.2;
-
-        const delay = ctx.createDelay(0.5);
-        delay.delayTime.value = 0.12;
-        const feedback = ctx.createGain();
-        feedback.gain.value = 0.22;
-
-        const convolver = ctx.createConvolver();
-        convolver.buffer = this.generateImpulseResponse(1.2, 3.5);
-        const wet = ctx.createGain();
-        wet.gain.value = 0.28;
+        // "Eco Susurro" — a second voice repeats the same words a moment later as a warm close whisper,
+        // perfectly synced (single delay tap, very low feedback), at lower volume than the main voice.
         const dry = ctx.createGain();
-        dry.gain.value = 0.85;
+        dry.gain.value = 1.0;
+
+        // Whisper character chain for the delayed repetition
+        const repeatLP = ctx.createBiquadFilter();
+        repeatLP.type = 'lowpass';
+        repeatLP.frequency.value = 2800;
+        repeatLP.Q.value = 0.7;
+
+        const repeatHP = ctx.createBiquadFilter();
+        repeatHP.type = 'highpass';
+        repeatHP.frequency.value = 200;
+
+        const repeatPresence = ctx.createBiquadFilter();
+        repeatPresence.type = 'peaking';
+        repeatPresence.frequency.value = 2000;
+        repeatPresence.gain.value = 2;
+        repeatPresence.Q.value = 1.1;
+
+        // Single offset delay (~0.32s) — sounds like another person echoing the words
+        const delay = ctx.createDelay(2);
+        delay.delayTime.value = 0.32;
+        // Very subtle feedback so it isn't a one-shot click, but stays clearly synced
+        const feedback = ctx.createGain();
+        feedback.gain.value = 0.12;
+
+        // Small warm reverb to give the repeat intimacy
+        const warmReverb = ctx.createConvolver();
+        warmReverb.buffer = this.generateImpulseResponse(1.2, 3.2);
+
+        const wet = ctx.createGain();
+        wet.gain.value = 0.35;
+
+        const repeatLevel = ctx.createGain();
+        repeatLevel.gain.value = 0.55; // lower than main voice
 
         const merger = ctx.createGain();
 
-        lastNode.connect(filter);
-        filter.connect(presence);
-        presence.connect(dry);
+        // Dry main voice
+        lastNode.connect(dry);
         dry.connect(merger);
 
-        presence.connect(delay);
+        // Delayed repeating whisper voice
+        lastNode.connect(repeatHP);
+        repeatHP.connect(repeatLP);
+        repeatLP.connect(repeatPresence);
+        repeatPresence.connect(delay);
         delay.connect(feedback);
         feedback.connect(delay);
-        delay.connect(convolver);
-        convolver.connect(wet);
-        wet.connect(merger);
+        delay.connect(warmReverb);
+        warmReverb.connect(wet);
+        wet.connect(repeatLevel);
+        repeatLevel.connect(merger);
 
-        this.effectNodes.push(filter, presence, delay, feedback, convolver, wet, dry, merger);
+        this.effectNodes.push(dry, repeatHP, repeatLP, repeatPresence, delay, feedback, warmReverb, wet, repeatLevel, merger);
         lastNode = merger;
         break;
       }
