@@ -6,7 +6,8 @@ export type EffectType =
   | 'nature-ambience'
   | 'angelic-voice'
   | 'depth-3d'
-  | 'soft-echo';
+  | 'soft-echo'
+  | 'whisper-echo';
 
 export interface EffectInfo {
   id: EffectType;
