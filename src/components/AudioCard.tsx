@@ -140,9 +140,6 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
           ))}
         </div>
 
-        {/* Transcription */}
-        <TranscriptionPanel audioId={audio.id} currentTime={currentTime} isPlaying={isPlaying && isActive} />
-
         {/* Effects & Voice row */}
         <div className="flex items-center gap-2 flex-wrap">
           <ImmersiveEffectsPanel audioId={audio.id} isPlaying={isPlaying && isActive} allowEffects={audio.allowImmersiveEffects} />
