@@ -68,7 +68,8 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
       // Always restart from 0:00 when track becomes active via scroll/auto
       playTrack(audio, { restart: true }).catch(() => {});
     }
-  }, [audio, autoPlay, isActive, playSignal, playTrack]);
+    if (!isActive && lyricsOpen) setLyricsOpen(false);
+  }, [audio, autoPlay, isActive, playSignal, playTrack, lyricsOpen]);
 
   useEffect(() => {
     if (isActive && playback.endedTrackId === audio.id && playback.endedSignal > 0) {
