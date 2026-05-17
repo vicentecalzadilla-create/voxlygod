@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Save, Scissors, Sparkles, X } from 'lucide-react';
+import { Save, Scissors, Sparkles, X, Type } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import AudioEditTools, { type AudioEditToolsHandle } from '@/components/AudioEditTools';
+import TextToAudioPanel from '@/components/TextToAudioPanel';
 import { VISUAL_EFFECTS } from '@/audio/audioEditUtils';
+import type { TranscriptSegment } from '@/audio/ttsVoices';
 
 interface AudioRow {
   id: string;
