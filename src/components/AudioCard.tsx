@@ -42,6 +42,12 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
   const [amenBurstKey, setAmenBurstKey] = useState(0);
   const [iconPulseKey, setIconPulseKey] = useState(0);
   const [saved, setSaved] = useState(audio.isSaved);
+  const [lyricsOpen, setLyricsOpen] = useState(false);
+  const lyricsSegments = useMemo(
+    () => audio.transcript && audio.transcript.length ? audio.transcript : (MOCK_TRANSCRIPTS[audio.id] || []),
+    [audio.id, audio.transcript]
+  );
+  const hasLyrics = lyricsSegments.length > 0;
   const { theme } = useTheme();
   const playback = useAudioPlayback();
   const { playTrack, toggleTrack, cycleRepeatMode, seekTo } = playback;
