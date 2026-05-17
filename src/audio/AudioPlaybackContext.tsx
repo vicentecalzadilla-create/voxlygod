@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 import type { AudioPost } from '@/data/mockData';
 import { getAudioEffectsEngine, type EffectType } from '@/audio/AudioEffectsEngine';
 
