@@ -3,7 +3,6 @@ import { MessageCircle, Share2, Bookmark, Play, Pause, SkipForward, Repeat, Repe
 import type { AudioPost } from '@/data/mockData';
 import AudioVisualizer from './AudioVisualizer';
 import ImmersiveEffectsPanel from './ImmersiveEffectsPanel';
-import TranscriptionPanel from './TranscriptionPanel';
 import VoiceSelectorPanel from './VoiceSelectorPanel';
 import LyricsPanel from './LyricsPanel';
 import { useTheme } from '@/contexts/ThemeContext';
