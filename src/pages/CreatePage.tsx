@@ -152,8 +152,17 @@ const CreatePage = () => {
         return;
       }
 
-      const t = audioBlob.type;
-      const ext = t.includes('webm') ? 'webm'
+      // Use edited version if user trimmed or appended a segment
+      const edited = await editorRef.current?.buildEdited();
+      const useEdited = !!(edited && edited.edited);
+      const uploadBlob: Blob = useEdited ? edited!.blob : audioBlob;
+      const finalDuration = edited
+        ? Math.round(edited.duration)
+        : Math.round(recordSeconds || 0);
+
+      const t = uploadBlob.type;
+      const ext = useEdited ? 'wav'
+        : t.includes('webm') ? 'webm'
         : t.includes('mpeg') || t.includes('mp3') ? 'mp3'
         : t.includes('ogg') ? 'ogg'
         : t.includes('wav') ? 'wav'
@@ -161,8 +170,8 @@ const CreatePage = () => {
         : t.includes('aac') ? 'aac'
         : 'webm';
       const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('audios').upload(fileName, audioBlob, {
-        contentType: audioBlob.type || 'audio/webm',
+      const { error: upErr } = await supabase.storage.from('audios').upload(fileName, uploadBlob, {
+        contentType: uploadBlob.type || 'audio/webm',
         upsert: false,
       });
       if (upErr) throw upErr;
@@ -179,7 +188,7 @@ const CreatePage = () => {
         allow_immersive_effects: allowImmersive,
         allow_voice_change: allowVoiceChange,
         user_id: user.id,
-        duration: Math.round(recordSeconds || 0),
+        duration: finalDuration,
       });
       if (insErr) throw insErr;
       toast({ title: '🎉 Publicado', description: 'Tu audio ya está disponible en el feed.' });
