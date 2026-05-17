@@ -39,6 +39,13 @@ export const AudioPlaybackProvider = ({ children }: { children: ReactNode }) => 
   const [progress, setProgress] = useState(0);
   const [endedTrackId, setEndedTrackId] = useState<string | null>(null);
   const [endedSignal, setEndedSignal] = useState(0);
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.pathname !== '/' && audioRef.current && !audioRef.current.paused) {
+      audioRef.current.pause();
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     const audio = new Audio();
