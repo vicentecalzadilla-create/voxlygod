@@ -24,8 +24,8 @@ export const EFFECTS_LIST: EffectInfo[] = [
   { id: 'nature-ambience', label: 'Naturaleza', emoji: '🌿', description: 'Lluvia, viento, olas' },
   { id: 'angelic-voice', label: 'Voz Angelical', emoji: '🕊️', description: 'Brillo en la voz' },
   { id: 'depth-3d', label: 'Profundidad 3D', emoji: '🌀', description: 'Efecto espacial' },
-  { id: 'soft-echo', label: 'Eco Suave', emoji: '💫', description: 'Eco ligero y cálido' },
-  { id: 'whisper-echo', label: 'Eco Susurro', emoji: '🤫', description: 'Susurro íntimo y cálido' },
+  { id: 'soft-echo', label: 'Eco Suave', emoji: '💫', description: 'Capa de susurro cálido superpuesta' },
+  { id: 'whisper-echo', label: 'Eco Susurro', emoji: '🤫', description: 'Otra voz repite en susurro' },
 ];
 
 class AudioEffectsEngine {
