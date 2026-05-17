@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MessageCircle, Share2, Bookmark, Play, Pause, SkipForward, Repeat, Repeat1 } from 'lucide-react';
+import { MessageCircle, Share2, Bookmark, Play, Pause, SkipForward, Repeat, Repeat1, Scissors } from 'lucide-react';
 import type { AudioPost } from '@/data/mockData';
 import AudioVisualizer from './AudioVisualizer';
 import ImmersiveEffectsPanel from './ImmersiveEffectsPanel';
@@ -14,9 +14,10 @@ interface AudioCardProps {
   autoPlay?: boolean;
   playSignal?: number;
   onNext: () => void;
+  onEdit?: () => void;
 }
 
-const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext }: AudioCardProps) => {
+const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, onEdit }: AudioCardProps) => {
   const [amen, setAmen] = useState(audio.isLiked);
   const [amenBurstKey, setAmenBurstKey] = useState(0);
   const [iconPulseKey, setIconPulseKey] = useState(0);
@@ -258,6 +259,17 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext }:
           <Bookmark className={`w-6 h-6 transition-colors ${saved ? 'fill-primary text-primary' : 'text-foreground/50'}`} />
           <span className="text-[10px] text-foreground/70">{saved ? 'Guardado' : 'Guardar'}</span>
         </button>
+        {onEdit && (
+          <button onClick={onEdit} className="flex flex-col items-center gap-0.5" aria-label="Editar audio">
+            <span
+              className="w-9 h-9 rounded-full flex items-center justify-center text-primary-foreground gold-glow"
+              style={{ background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))' }}
+            >
+              <Scissors className="w-4 h-4" />
+            </span>
+            <span className="text-[10px] text-primary font-medium">Editar</span>
+          </button>
+        )}
       </div>
     </div>
   );

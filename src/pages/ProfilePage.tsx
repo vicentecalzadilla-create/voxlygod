@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Settings, Bookmark, Clock, LogOut, ChevronRight, Sun, Moon, Play, Pause, Pencil, Trash2 } from 'lucide-react';
+import { Settings, Bookmark, Clock, LogOut, ChevronRight, Sun, Moon, Play, Pause, Pencil, Trash2, Scissors } from 'lucide-react';
+import AudioEditorDialog from '@/components/AudioEditorDialog';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +23,7 @@ const ProfilePage = () => {
   const playback = useAudioPlayback();
   const [myAudios, setMyAudios] = useState<UserAudioRow[]>([]);
   const [loadingAudios, setLoadingAudios] = useState(true);
+  const [editing, setEditing] = useState<UserAudioRow | null>(null);
 
   const loadMyAudios = async () => {
     setLoadingAudios(true);
@@ -204,6 +206,9 @@ const ProfilePage = () => {
                     <p className="text-xs font-semibold truncate">{a.title}</p>
                     <p className="text-[10px] text-muted-foreground">{a.category} · {a.duration || 0}s</p>
                   </div>
+                  <button onClick={() => setEditing(a)} className="w-8 h-8 rounded-full hover:bg-primary/10 flex items-center justify-center" aria-label="Editar audio">
+                    <Scissors className="w-3.5 h-3.5 text-primary" />
+                  </button>
                   <button onClick={() => handleRename(a)} className="w-8 h-8 rounded-full hover:bg-primary/10 flex items-center justify-center" aria-label="Editar título">
                     <Pencil className="w-3.5 h-3.5 text-primary" />
                   </button>
@@ -236,6 +241,15 @@ const ProfilePage = () => {
       <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 p-3 rounded-xl text-destructive hover:bg-destructive/10 transition-colors text-sm">
         <LogOut className="w-4 h-4" /> Cerrar sesión
       </button>
+
+      {editing && (
+        <AudioEditorDialog
+          open={!!editing}
+          onOpenChange={(o) => { if (!o) setEditing(null); }}
+          audio={{ id: editing.id, title: editing.title, audio_url: editing.audio_url }}
+          onSaved={() => { setEditing(null); loadMyAudios(); }}
+        />
+      )}
     </div>
   );
 };

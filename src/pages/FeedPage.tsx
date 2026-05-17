@@ -2,7 +2,10 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { ToggleLeft, ToggleRight } from 'lucide-react';
 import { mockAudios, categories, type AudioPost } from '@/data/mockData';
 import AudioCard from '@/components/AudioCard';
+import AudioEditorDialog from '@/components/AudioEditorDialog';
 import { supabase } from '@/integrations/supabase/client';
+
+interface EditableInfo { id: string; title: string; audio_url: string }
 
 const FeedPage = () => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -10,6 +13,9 @@ const FeedPage = () => {
   const [autoNext, setAutoNext] = useState(true);
   const [activeCategory, setActiveCategory] = useState('Para ti');
   const [userAudios, setUserAudios] = useState<AudioPost[]>([]);
+  const [ownedIds, setOwnedIds] = useState<Record<string, EditableInfo>>({});
+  const [editing, setEditing] = useState<EditableInfo | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeIndexRef = useRef(0);
   const scrollRafRef = useRef<number | null>(null);
@@ -19,35 +25,43 @@ const FeedPage = () => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       const { data } = await supabase
         .from('audios')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
       if (cancelled || !data) return;
-      const mapped: AudioPost[] = data.map((row: any) => ({
-        id: row.id,
-        title: row.title,
-        description: row.description || '',
-        creatorName: row.creator_name,
-        creatorAvatar: row.creator_avatar || '🙏',
-        duration: row.duration || 0,
-        likes: row.likes || 0,
-        comments: row.comments || 0,
-        shares: row.shares || 0,
-        tags: row.tags || [],
-        verse: row.verse || undefined,
-        category: row.category || 'General',
-        visualEffect: (row.visual_effect || 'light-rays') as AudioPost['visualEffect'],
-        isLiked: false,
-        isSaved: false,
-        allowImmersiveEffects: row.allow_immersive_effects ?? true,
-        audioUrl: row.audio_url,
-      }));
+      const owned: Record<string, EditableInfo> = {};
+      const mapped: AudioPost[] = data.map((row: any) => {
+        if (user && row.user_id === user.id) {
+          owned[row.id] = { id: row.id, title: row.title, audio_url: row.audio_url };
+        }
+        return {
+          id: row.id,
+          title: row.title,
+          description: row.description || '',
+          creatorName: row.creator_name,
+          creatorAvatar: row.creator_avatar || '🙏',
+          duration: row.duration || 0,
+          likes: row.likes || 0,
+          comments: row.comments || 0,
+          shares: row.shares || 0,
+          tags: row.tags || [],
+          verse: row.verse || undefined,
+          category: row.category || 'General',
+          visualEffect: (row.visual_effect || 'light-rays') as AudioPost['visualEffect'],
+          isLiked: false,
+          isSaved: false,
+          allowImmersiveEffects: row.allow_immersive_effects ?? true,
+          audioUrl: row.audio_url,
+        };
+      });
       setUserAudios(mapped);
+      setOwnedIds(owned);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [reloadKey]);
 
   // Autoplay first track once mounted
   useEffect(() => {
@@ -147,9 +161,26 @@ const FeedPage = () => {
         }}
       >
         {audios.map((audio, i) => (
-          <AudioCard key={audio.id} audio={audio} isActive={i === activeIndex} autoPlay={autoNext} playSignal={playSignal} onNext={handleNext} />
+          <AudioCard
+            key={audio.id}
+            audio={audio}
+            isActive={i === activeIndex}
+            autoPlay={autoNext}
+            playSignal={playSignal}
+            onNext={handleNext}
+            onEdit={ownedIds[audio.id] ? () => setEditing(ownedIds[audio.id]) : undefined}
+          />
         ))}
       </div>
+
+      {editing && (
+        <AudioEditorDialog
+          open={!!editing}
+          onOpenChange={(o) => { if (!o) setEditing(null); }}
+          audio={editing}
+          onSaved={() => { setEditing(null); setReloadKey(k => k + 1); }}
+        />
+      )}
     </div>
   );
 };
