@@ -67,20 +67,31 @@ const AudioEditorDialog = ({ open, onOpenChange, audio, onSaved }: Props) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { toast({ title: 'Inicia sesión', variant: 'destructive' }); return; }
 
-      const edited = await editorRef.current?.buildEdited();
       let newUrl = audio.audio_url;
       let newDuration: number | undefined;
+      let newTranscript: TranscriptSegment[] | null = null;
+      let newSourceText: string | null = null;
+      let newVoice: string | null = null;
 
-      if (edited && edited.edited) {
-        const fileName = `${user.id}/edited-${Date.now()}.wav`;
-        const { error: upErr } = await supabase.storage.from('audios').upload(fileName, edited.blob, {
-          contentType: 'audio/wav', upsert: false,
-        });
-        if (upErr) throw upErr;
-        newUrl = supabase.storage.from('audios').getPublicUrl(fileName).data.publicUrl;
-        newDuration = Math.round(edited.duration);
-      } else if (edited) {
-        newDuration = Math.round(edited.duration);
+      if (editMode === 'text' && ttsData) {
+        newUrl = ttsData.url;
+        newDuration = ttsData.duration;
+        newTranscript = ttsData.transcript;
+        newSourceText = ttsData.source;
+        newVoice = ttsData.voice;
+      } else {
+        const edited = await editorRef.current?.buildEdited();
+        if (edited && edited.edited) {
+          const fileName = `${user.id}/edited-${Date.now()}.wav`;
+          const { error: upErr } = await supabase.storage.from('audios').upload(fileName, edited.blob, {
+            contentType: 'audio/wav', upsert: false,
+          });
+          if (upErr) throw upErr;
+          newUrl = supabase.storage.from('audios').getPublicUrl(fileName).data.publicUrl;
+          newDuration = Math.round(edited.duration);
+        } else if (edited) {
+          newDuration = Math.round(edited.duration);
+        }
       }
 
       const payload: any = {
@@ -93,6 +104,7 @@ const AudioEditorDialog = ({ open, onOpenChange, audio, onSaved }: Props) => {
       };
       if (newUrl !== audio.audio_url) payload.audio_url = newUrl;
       if (newDuration !== undefined) payload.duration = newDuration;
+      if (newTranscript) { payload.transcript = newTranscript; payload.source_text = newSourceText; payload.tts_voice = newVoice; payload.translations = {}; }
 
       if (asNewVersion) {
         const { data: src } = await supabase.from('audios').select('*').eq('id', audio.id).maybeSingle();
