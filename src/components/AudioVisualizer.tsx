@@ -109,13 +109,90 @@ const AudioVisualizer = ({ isPlaying, effect }: AudioVisualizerProps) => {
         </div>
       ))}
 
-      {/* Cross light rays */}
-      {(effect === 'cross' || effect === 'light-rays') && isPlaying && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-px h-40 animate-pulse-glow"
-            style={{ background: 'linear-gradient(to bottom, transparent, hsl(38 80% 65% / 0.4), hsl(340 60% 72% / 0.2), transparent)' }} />
-          <div className="absolute w-40 h-px animate-pulse-glow"
-            style={{ background: 'linear-gradient(to right, transparent, hsl(200 70% 70% / 0.3), hsl(270 50% 68% / 0.2), transparent)', animationDelay: '0.5s' }} />
+      {/* Light rays */}
+      {effect === 'light-rays' && isPlaying && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[0, 1, 2, 3, 4].map(i => (
+            <div
+              key={`ray-${i}`}
+              className="absolute top-1/2 left-1/2 origin-top animate-pulse-glow"
+              style={{
+                width: '2px',
+                height: '120%',
+                background: 'linear-gradient(to bottom, hsl(38 90% 70% / 0.6), hsl(340 60% 72% / 0.2), transparent)',
+                transform: `translate(-50%, -10%) rotate(${(i - 2) * 18}deg)`,
+                animationDelay: `${i * 0.3}s`,
+                filter: 'blur(1px)',
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Cross */}
+      {effect === 'cross' && isPlaying && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="relative animate-pulse-glow" style={{ filter: 'drop-shadow(0 0 16px hsl(38 90% 65% / 0.7))' }}>
+            <div className="w-2 h-40 rounded-full"
+              style={{ background: 'linear-gradient(to bottom, hsl(38 90% 70%), hsl(340 60% 72%))' }} />
+            <div className="absolute top-10 left-1/2 -translate-x-1/2 w-24 h-2 rounded-full"
+              style={{ background: 'linear-gradient(to right, hsl(340 60% 72%), hsl(38 90% 70%))' }} />
+          </div>
+        </div>
+      )}
+
+      {/* Clouds / Sky */}
+      {effect === 'clouds' && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[0, 1, 2, 3].map(i => (
+            <div
+              key={`cloud-${i}`}
+              className="absolute rounded-full"
+              style={{
+                width: `${120 + i * 40}px`,
+                height: `${60 + i * 16}px`,
+                left: `${(i * 27) % 80}%`,
+                top: `${15 + (i * 19) % 60}%`,
+                background: 'radial-gradient(ellipse, hsl(200 80% 92% / 0.6), hsl(210 70% 88% / 0.2), transparent 70%)',
+                filter: 'blur(8px)',
+                animation: isPlaying ? `drift ${10 + i * 3}s ease-in-out infinite` : 'none',
+                animationDelay: `${i * 1.2}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Candles */}
+      {effect === 'candles' && (
+        <div className="absolute inset-0 flex items-end justify-center gap-6 pb-12 pointer-events-none">
+          {[0, 1, 2].map(i => (
+            <div key={`candle-${i}`} className="relative flex flex-col items-center">
+              <div
+                className="w-2 h-3 rounded-full mb-0.5"
+                style={{
+                  background: 'radial-gradient(ellipse, hsl(45 100% 75%), hsl(25 90% 55%) 60%, transparent)',
+                  boxShadow: '0 0 18px hsl(38 95% 60% / 0.9), 0 0 36px hsl(25 90% 55% / 0.6)',
+                  animation: isPlaying ? `sparkle ${0.8 + i * 0.2}s ease-in-out infinite` : 'none',
+                  animationDelay: `${i * 0.15}s`,
+                }}
+              />
+              <div className="w-3 h-20 rounded-sm" style={{ background: 'linear-gradient(to bottom, hsl(45 50% 88%), hsl(35 40% 70%))' }} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Bible */}
+      {effect === 'bible' && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="relative animate-pulse-glow" style={{ filter: 'drop-shadow(0 0 20px hsl(38 80% 60% / 0.7))' }}>
+            <div className="w-32 h-40 rounded-md flex items-center justify-center text-5xl"
+              style={{ background: 'linear-gradient(135deg, hsl(20 50% 25%), hsl(15 40% 18%))', boxShadow: 'inset 0 0 24px hsl(0 0% 0% / 0.4)' }}>
+              <span style={{ filter: 'drop-shadow(0 0 8px hsl(38 90% 70%))' }}>✝️</span>
+            </div>
+            <div className="absolute inset-y-2 left-1/2 w-px bg-gold/40" />
+          </div>
         </div>
       )}
 
