@@ -1,17 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic, Upload, Wand2, X, Sparkles, Volume2, Square, Play, Pause, AlertCircle } from 'lucide-react';
+import { Mic, Upload, X, Sparkles, Volume2, Square, AlertCircle } from 'lucide-react';
 import { EFFECTS_LIST, getAudioEffectsEngine, type EffectType } from '@/audio/AudioEffectsEngine';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import AudioEditTools, { type AudioEditToolsHandle } from '@/components/AudioEditTools';
+import { VISUAL_EFFECTS } from '@/audio/audioEditUtils';
 
-const visualEffects = [
-  { id: 'light-rays', label: 'Rayos de luz', emoji: '✨' },
-  { id: 'cross', label: 'Cruz', emoji: '✝️' },
-  { id: 'clouds', label: 'Cielo', emoji: '☁️' },
-  { id: 'candles', label: 'Velas', emoji: '🕯️' },
-  { id: 'bible', label: 'Biblia', emoji: '📖' },
-];
+const visualEffects = VISUAL_EFFECTS;
 
 const CreatePage = () => {
   const navigate = useNavigate();
