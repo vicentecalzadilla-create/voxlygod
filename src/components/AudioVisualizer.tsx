@@ -7,42 +7,54 @@ interface AudioVisualizerProps {
 }
 
 const particleColors = [
-  'hsl(38 80% 60%)',    // gold
-  'hsl(340 60% 72%)',   // rose
-  'hsl(200 70% 70%)',   // sky blue
-  'hsl(270 50% 68%)',   // violet
-  'hsl(175 50% 58%)',   // turquoise
-  'hsl(25 80% 62%)',    // warm orange
-];
-
-const barColors = [
-  'from-gold/80 to-rose/50',
-  'from-rose/70 to-violet/50',
-  'from-sky-blue/70 to-turquoise/50',
-  'from-violet/70 to-gold/50',
-  'from-turquoise/70 to-sky-blue/50',
-  'from-warm-orange/70 to-gold/50',
+  'hsl(45 90% 75%)',    // warm gold
+  'hsl(38 95% 70%)',    // gold
+  'hsl(340 70% 80%)',   // soft rose
+  'hsl(210 80% 82%)',   // celestial blue
+  'hsl(280 60% 80%)',   // soft violet
+  'hsl(30 90% 78%)',    // peach gold
 ];
 
 const AudioVisualizer = ({ isPlaying, effect }: AudioVisualizerProps) => {
-  const bars = useMemo(() => Array.from({ length: 40 }, (_, i) => ({
-    height: 0.25 + ((i * 17) % 31) / 40,
-    speed: 0.8 + ((i * 7) % 8) / 10,
+  // Floating luminous orbs (the main ambient layer)
+  const orbs = useMemo(() => Array.from({ length: 28 }, (_, i) => ({
+    size: 3 + ((i * 13) % 7),
+    left: ((i * 53) % 100),
+    top: ((i * 67) % 100),
+    duration: 6 + ((i * 7) % 6),
+    drift: 8 + ((i * 11) % 7),
+    delay: (i % 9) * 0.4,
+    color: particleColors[i % particleColors.length],
+    opacity: 0.4 + ((i * 7) % 5) / 10,
   })), []);
-  const particles = useMemo(() => Array.from({ length: 20 }, (_, i) => ({
-    size: 2 + ((i * 11) % 4),
-    left: 10 + ((i * 23) % 80),
-    top: 10 + ((i * 31) % 80),
-    duration: 2 + ((i * 5) % 3),
-    drift: 4 + ((i * 7) % 5),
-    delay: (i % 6) * 0.45,
+
+  // Tiny twinkling stars
+  const stars = useMemo(() => Array.from({ length: 14 }, (_, i) => ({
+    left: ((i * 41) % 100),
+    top: ((i * 59) % 100),
+    size: 4 + ((i * 3) % 8),
+    delay: (i % 7) * 0.5,
+    duration: 2.5 + ((i * 5) % 4),
   })), []);
-  const stars = useMemo(() => Array.from({ length: 8 }, (_, i) => ({
-    left: 5 + ((i * 29) % 90),
-    top: 5 + ((i * 37) % 90),
-    size: 6 + ((i * 5) % 10),
-    delay: (i % 5) * 0.6,
+
+  // God-ray angles for the celestial light effect (used as default ambience too)
+  const rays = useMemo(() => [
+    { angle: -22, width: 80, opacity: 0.35, delay: 0 },
+    { angle: -10, width: 60, opacity: 0.25, delay: 0.8 },
+    { angle: 0,   width: 100, opacity: 0.45, delay: 0.3 },
+    { angle: 10,  width: 60, opacity: 0.25, delay: 1.2 },
+    { angle: 22,  width: 80, opacity: 0.35, delay: 0.5 },
+  ], []);
+
+  // Rising sparks (for candles/ascending light)
+  const sparks = useMemo(() => Array.from({ length: 12 }, (_, i) => ({
+    left: 30 + ((i * 13) % 40),
+    size: 2 + ((i * 3) % 3),
+    duration: 3 + ((i * 5) % 4),
+    delay: (i % 6) * 0.4,
+    color: particleColors[i % particleColors.length],
   })), []);
+
   const [level, setLevel] = useState(0);
 
   useEffect(() => {
@@ -59,49 +71,98 @@ const AudioVisualizer = ({ isPlaying, effect }: AudioVisualizerProps) => {
     return () => cancelAnimationFrame(frame);
   }, [isPlaying]);
 
-  return (
-    <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointillist-bg">
-      {/* Soft radial glows */}
-      <div className={`absolute w-72 h-72 rounded-full transition-all duration-1000 ${isPlaying ? 'animate-pulse-glow' : 'opacity-10'}`}
-        style={{ background: 'radial-gradient(circle, hsl(38 80% 65% / 0.25), hsl(340 60% 72% / 0.15), transparent 70%)' }} />
-      <div className={`absolute w-56 h-56 rounded-full transition-all duration-1000 ${isPlaying ? 'animate-pulse-glow' : 'opacity-10'}`}
-        style={{ background: 'radial-gradient(circle, hsl(200 70% 70% / 0.2), hsl(270 50% 68% / 0.1), transparent 70%)', animationDelay: '1.5s' }} />
+  const intensity = isPlaying ? 0.6 + level * 0.8 : 0.35;
 
-      {/* Sparkle particles */}
-      {isPlaying && particles.map((particle, i) => (
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {/* Deep ambient gradient base */}
+      <div className="absolute inset-0" style={{
+        background: 'radial-gradient(ellipse at 50% 40%, hsl(45 80% 75% / 0.18), hsl(340 60% 75% / 0.12) 40%, hsl(220 60% 70% / 0.08) 70%, transparent 100%)',
+      }} />
+
+      {/* Soft halos that breathe */}
+      <div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-opacity duration-1000"
+        style={{
+          width: '380px',
+          height: '380px',
+          background: 'radial-gradient(circle, hsl(45 95% 75% / 0.30), hsl(38 90% 65% / 0.15) 45%, transparent 70%)',
+          opacity: 0.5 + intensity * 0.4,
+          filter: 'blur(8px)',
+          animation: isPlaying ? 'pulse-glow 4s ease-in-out infinite' : 'none',
+        }}
+      />
+      <div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full transition-opacity duration-1000"
+        style={{
+          width: '260px',
+          height: '260px',
+          background: 'radial-gradient(circle, hsl(340 70% 80% / 0.25), hsl(280 60% 75% / 0.1) 50%, transparent 75%)',
+          opacity: 0.5 + intensity * 0.3,
+          filter: 'blur(6px)',
+          animation: isPlaying ? 'pulse-glow 5.5s ease-in-out infinite' : 'none',
+          animationDelay: '1.2s',
+        }}
+      />
+
+      {/* God rays — always present as ambient default, stronger on 'light-rays' */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ mixBlendMode: 'screen' }}>
+        {rays.map((ray, i) => {
+          const isHero = effect === 'light-rays';
+          const baseOpacity = (isHero ? ray.opacity * 1.6 : ray.opacity * 0.55) * (0.7 + intensity * 0.6);
+          return (
+            <div
+              key={`ray-${i}`}
+              className="absolute left-1/2 top-0 origin-top"
+              style={{
+                width: `${ray.width}px`,
+                height: '140%',
+                transform: `translateX(-50%) rotate(${ray.angle}deg)`,
+                background: `linear-gradient(to bottom, hsl(45 95% 78% / ${baseOpacity}) 0%, hsl(38 90% 70% / ${baseOpacity * 0.5}) 30%, transparent 70%)`,
+                filter: 'blur(14px)',
+                opacity: isPlaying ? 1 : 0.6,
+                animation: isPlaying ? `pulse-glow ${4 + i * 0.4}s ease-in-out infinite` : 'none',
+                animationDelay: `${ray.delay}s`,
+              }}
+            />
+          );
+        })}
+      </div>
+
+      {/* Floating luminous orbs (ambient celestial particles) */}
+      {orbs.map((orb, i) => (
         <div
-          key={i}
+          key={`orb-${i}`}
           className="absolute rounded-full"
           style={{
-            width: `${particle.size}px`,
-            height: `${particle.size}px`,
-            backgroundColor: particleColors[i % particleColors.length],
-            left: `${particle.left}%`,
-            top: `${particle.top}%`,
-            animationName: 'sparkle, drift',
-            animationDuration: `${particle.duration}s, ${particle.drift}s`,
-            animationTimingFunction: 'ease-in-out, ease-in-out',
-            animationIterationCount: 'infinite, infinite',
-            animationDelay: `${particle.delay}s, ${particle.delay}s`,
-            filter: 'blur(0.5px)',
-            boxShadow: `0 0 6px ${particleColors[i % particleColors.length]}`,
+            width: `${orb.size}px`,
+            height: `${orb.size}px`,
+            left: `${orb.left}%`,
+            top: `${orb.top}%`,
+            background: `radial-gradient(circle, ${orb.color}, transparent 70%)`,
+            opacity: isPlaying ? orb.opacity : orb.opacity * 0.4,
+            boxShadow: `0 0 ${8 + orb.size * 2}px ${orb.color}`,
+            filter: 'blur(0.4px)',
+            animation: isPlaying
+              ? `drift ${orb.drift}s ease-in-out infinite, sparkle ${orb.duration}s ease-in-out infinite`
+              : `drift ${orb.drift * 1.5}s ease-in-out infinite`,
+            animationDelay: `${orb.delay}s, ${orb.delay}s`,
           }}
         />
       ))}
 
-      {/* Stars */}
+      {/* Twinkling stars */}
       {isPlaying && stars.map((star, i) => (
         <div
           key={`star-${i}`}
-          className="absolute text-gold/60"
+          className="absolute"
           style={{
             left: `${star.left}%`,
             top: `${star.top}%`,
             fontSize: `${star.size}px`,
-            animationName: 'sparkle',
-            animationDuration: `${3 + (i % 2)}s`,
-            animationTimingFunction: 'ease-in-out',
-            animationIterationCount: 'infinite',
+            color: 'hsl(45 95% 80%)',
+            textShadow: '0 0 8px hsl(45 95% 70% / 0.9), 0 0 16px hsl(38 90% 65% / 0.6)',
+            animation: `sparkle ${star.duration}s ease-in-out infinite`,
             animationDelay: `${star.delay}s`,
           }}
         >
@@ -109,116 +170,163 @@ const AudioVisualizer = ({ isPlaying, effect }: AudioVisualizerProps) => {
         </div>
       ))}
 
-      {/* Light rays */}
-      {effect === 'light-rays' && isPlaying && (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {[0, 1, 2, 3, 4].map(i => (
+      {/* CROSS */}
+      {effect === 'cross' && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="relative" style={{ filter: `drop-shadow(0 0 ${18 + intensity * 16}px hsl(45 95% 70% / 0.85))` }}>
             <div
-              key={`ray-${i}`}
-              className="absolute top-1/2 left-1/2 origin-top animate-pulse-glow"
+              className="w-[6px] h-44 rounded-full"
               style={{
-                width: '2px',
-                height: '120%',
-                background: 'linear-gradient(to bottom, hsl(38 90% 70% / 0.6), hsl(340 60% 72% / 0.2), transparent)',
-                transform: `translate(-50%, -10%) rotate(${(i - 2) * 18}deg)`,
-                animationDelay: `${i * 0.3}s`,
-                filter: 'blur(1px)',
+                background: 'linear-gradient(to bottom, hsl(45 95% 85%), hsl(38 90% 65%), hsl(340 60% 72%))',
+                boxShadow: '0 0 24px hsl(45 95% 70% / 0.8), inset 0 0 8px hsl(45 100% 90% / 0.6)',
               }}
             />
-          ))}
-        </div>
-      )}
-
-      {/* Cross */}
-      {effect === 'cross' && isPlaying && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="relative animate-pulse-glow" style={{ filter: 'drop-shadow(0 0 16px hsl(38 90% 65% / 0.7))' }}>
-            <div className="w-2 h-40 rounded-full"
-              style={{ background: 'linear-gradient(to bottom, hsl(38 90% 70%), hsl(340 60% 72%))' }} />
-            <div className="absolute top-10 left-1/2 -translate-x-1/2 w-24 h-2 rounded-full"
-              style={{ background: 'linear-gradient(to right, hsl(340 60% 72%), hsl(38 90% 70%))' }} />
+            <div
+              className="absolute top-12 left-1/2 -translate-x-1/2 w-28 h-[6px] rounded-full"
+              style={{
+                background: 'linear-gradient(to right, hsl(340 60% 72%), hsl(45 95% 85%), hsl(38 90% 65%))',
+                boxShadow: '0 0 24px hsl(45 95% 70% / 0.8), inset 0 0 8px hsl(45 100% 90% / 0.6)',
+              }}
+            />
+            {/* Soft halo behind cross */}
+            <div className="absolute inset-0 -m-12 rounded-full animate-pulse-glow" style={{
+              background: 'radial-gradient(circle, hsl(45 95% 75% / 0.4), transparent 65%)',
+              filter: 'blur(20px)',
+            }} />
           </div>
         </div>
       )}
 
-      {/* Clouds / Sky */}
+      {/* CLOUDS */}
       {effect === 'clouds' && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {[0, 1, 2, 3].map(i => (
+          {[0, 1, 2, 3, 4].map(i => (
             <div
               key={`cloud-${i}`}
               className="absolute rounded-full"
               style={{
-                width: `${120 + i * 40}px`,
-                height: `${60 + i * 16}px`,
-                left: `${(i * 27) % 80}%`,
-                top: `${15 + (i * 19) % 60}%`,
-                background: 'radial-gradient(ellipse, hsl(200 80% 92% / 0.6), hsl(210 70% 88% / 0.2), transparent 70%)',
+                width: `${140 + i * 36}px`,
+                height: `${70 + i * 14}px`,
+                left: `${(i * 23) % 75}%`,
+                top: `${10 + (i * 17) % 55}%`,
+                background: 'radial-gradient(ellipse, hsl(210 90% 96% / 0.8), hsl(220 80% 90% / 0.4) 40%, transparent 75%)',
+                filter: 'blur(12px)',
+                animation: isPlaying ? `drift ${12 + i * 2.5}s ease-in-out infinite` : 'none',
+                animationDelay: `${i * 1.5}s`,
+                opacity: 0.7,
+              }}
+            />
+          ))}
+          {/* Light filtering through */}
+          <div className="absolute inset-0" style={{
+            background: 'linear-gradient(180deg, hsl(45 100% 88% / 0.3) 0%, transparent 60%)',
+            mixBlendMode: 'screen',
+          }} />
+        </div>
+      )}
+
+      {/* CANDLES */}
+      {effect === 'candles' && (
+        <div className="absolute inset-0 flex items-end justify-center gap-8 pb-10 pointer-events-none">
+          {[0, 1, 2].map(i => (
+            <div key={`candle-${i}`} className="relative flex flex-col items-center">
+              {/* Halo around flame */}
+              <div className="absolute -top-2 w-12 h-12 rounded-full" style={{
+                background: 'radial-gradient(circle, hsl(38 95% 70% / 0.6), transparent 65%)',
                 filter: 'blur(8px)',
-                animation: isPlaying ? `drift ${10 + i * 3}s ease-in-out infinite` : 'none',
-                animationDelay: `${i * 1.2}s`,
+                animation: isPlaying ? `pulse-glow ${1.5 + i * 0.3}s ease-in-out infinite` : 'none',
+              }} />
+              <div
+                className="w-[6px] h-4 rounded-full mb-0.5 relative z-10"
+                style={{
+                  background: 'radial-gradient(ellipse, hsl(45 100% 92%) 10%, hsl(38 95% 65%) 50%, hsl(20 90% 55%) 90%)',
+                  boxShadow: '0 0 18px hsl(45 95% 70% / 0.95), 0 0 36px hsl(25 90% 55% / 0.7)',
+                  animation: isPlaying ? `sparkle ${0.9 + i * 0.2}s ease-in-out infinite` : 'none',
+                  animationDelay: `${i * 0.15}s`,
+                  filter: 'blur(0.3px)',
+                }}
+              />
+              <div className="w-3 h-20 rounded-sm" style={{
+                background: 'linear-gradient(to bottom, hsl(45 60% 92%), hsl(35 40% 75%))',
+                boxShadow: 'inset -2px 0 4px hsl(30 30% 50% / 0.3)',
+              }} />
+            </div>
+          ))}
+          {/* Rising sparks */}
+          {isPlaying && sparks.map((spark, i) => (
+            <div
+              key={`spark-${i}`}
+              className="absolute bottom-20 rounded-full"
+              style={{
+                left: `${spark.left}%`,
+                width: `${spark.size}px`,
+                height: `${spark.size}px`,
+                background: spark.color,
+                boxShadow: `0 0 8px ${spark.color}`,
+                animation: `amen-rise ${spark.duration}s ease-out infinite`,
+                animationDelay: `${spark.delay}s`,
               }}
             />
           ))}
         </div>
       )}
 
-      {/* Candles */}
-      {effect === 'candles' && (
-        <div className="absolute inset-0 flex items-end justify-center gap-6 pb-12 pointer-events-none">
-          {[0, 1, 2].map(i => (
-            <div key={`candle-${i}`} className="relative flex flex-col items-center">
-              <div
-                className="w-2 h-3 rounded-full mb-0.5"
-                style={{
-                  background: 'radial-gradient(ellipse, hsl(45 100% 75%), hsl(25 90% 55%) 60%, transparent)',
-                  boxShadow: '0 0 18px hsl(38 95% 60% / 0.9), 0 0 36px hsl(25 90% 55% / 0.6)',
-                  animation: isPlaying ? `sparkle ${0.8 + i * 0.2}s ease-in-out infinite` : 'none',
-                  animationDelay: `${i * 0.15}s`,
-                }}
-              />
-              <div className="w-3 h-20 rounded-sm" style={{ background: 'linear-gradient(to bottom, hsl(45 50% 88%), hsl(35 40% 70%))' }} />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Bible */}
+      {/* BIBLE */}
       {effect === 'bible' && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="relative animate-pulse-glow" style={{ filter: 'drop-shadow(0 0 20px hsl(38 80% 60% / 0.7))' }}>
-            <div className="w-32 h-40 rounded-md flex items-center justify-center text-5xl"
-              style={{ background: 'linear-gradient(135deg, hsl(20 50% 25%), hsl(15 40% 18%))', boxShadow: 'inset 0 0 24px hsl(0 0% 0% / 0.4)' }}>
-              <span style={{ filter: 'drop-shadow(0 0 8px hsl(38 90% 70%))' }}>✝️</span>
+          <div className="relative" style={{ filter: `drop-shadow(0 0 ${20 + intensity * 14}px hsl(45 90% 65% / 0.8))` }}>
+            <div
+              className="w-36 h-44 rounded-md flex items-center justify-center text-5xl relative overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, hsl(20 55% 28%), hsl(15 45% 20%))',
+                boxShadow: 'inset 0 0 28px hsl(0 0% 0% / 0.45), 0 0 40px hsl(45 90% 65% / 0.4)',
+              }}
+            >
+              {/* Pages glow */}
+              <div className="absolute inset-1 rounded-sm" style={{
+                background: 'linear-gradient(180deg, hsl(45 80% 92% / 0.15), transparent 30%, transparent 70%, hsl(45 80% 92% / 0.15))',
+              }} />
+              <span style={{ filter: 'drop-shadow(0 0 10px hsl(45 95% 75%))', color: 'hsl(45 90% 78%)' }}>✝</span>
             </div>
-            <div className="absolute inset-y-2 left-1/2 w-px bg-gold/40" />
+            <div className="absolute inset-y-2 left-1/2 w-px bg-gold/50" />
+            {/* Halo */}
+            <div className="absolute inset-0 -m-10 rounded-full animate-pulse-glow" style={{
+              background: 'radial-gradient(circle, hsl(45 95% 70% / 0.35), transparent 65%)',
+              filter: 'blur(18px)',
+            }} />
+            {/* Floating particles around the book */}
+            {[0,1,2,3,4,5].map(i => (
+              <div
+                key={`bp-${i}`}
+                className="absolute rounded-full"
+                style={{
+                  width: '4px',
+                  height: '4px',
+                  left: `${20 + (i * 17) % 70}%`,
+                  top: `${(i * 31) % 100}%`,
+                  background: particleColors[i % particleColors.length],
+                  boxShadow: `0 0 8px ${particleColors[i % particleColors.length]}`,
+                  animation: `drift ${5 + i}s ease-in-out infinite, sparkle ${2 + i * 0.3}s ease-in-out infinite`,
+                  animationDelay: `${i * 0.3}s, ${i * 0.4}s`,
+                }}
+              />
+            ))}
           </div>
         </div>
       )}
 
-      {/* Audio bars - multicolor pointillist */}
-      <div className="relative flex items-end gap-[2px] h-28">
-        {bars.map((bar, i) => {
-          const colorIdx = i % barColors.length;
-          const reactiveHeight = 8 + bar.height * 44 + level * (24 + (i % 7) * 7);
-          return (
-            <div
-              key={i}
-              className={`w-[3px] rounded-full bg-gradient-to-t ${barColors[colorIdx]} transition-all`}
-              style={{
-                height: isPlaying ? `${Math.min(108, reactiveHeight)}px` : '8px',
-                animationName: isPlaying ? 'wave' : 'none',
-                animationDuration: `${bar.speed}s`,
-                animationTimingFunction: 'ease-in-out',
-                animationIterationCount: 'infinite',
-                animationDelay: `${i * 0.05}s`,
-                opacity: isPlaying ? 0.65 + bar.height * 0.35 : 0.2,
-                filter: isPlaying ? `drop-shadow(0 0 3px ${particleColors[i % particleColors.length]})` : 'none',
-              }}
-            />
-          );
-        })}
-      </div>
+      {/* Reactive shimmer ring — subtle audio-reactive */}
+      <div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
+        style={{
+          width: `${180 + level * 120}px`,
+          height: `${180 + level * 120}px`,
+          border: '1px solid hsl(45 95% 75% / 0.25)',
+          boxShadow: `0 0 ${20 + level * 40}px hsl(45 95% 70% / ${0.15 + level * 0.3})`,
+          opacity: isPlaying ? 0.6 : 0,
+          transition: 'all 120ms ease-out',
+        }}
+      />
     </div>
   );
 };
