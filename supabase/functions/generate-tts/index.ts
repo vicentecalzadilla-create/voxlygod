@@ -185,23 +185,14 @@ Deno.serve(async (req) => {
     const alignment = data.alignment || data.normalized_alignment;
     const segments = alignment ? buildSegmentsFromAlignment(alignment) : [{ time: 0, text }];
 
-    const supaUrl = Deno.env.get('SUPABASE_URL')!;
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supaUrl, serviceKey);
-
-    let userId = 'anon';
-    const authHeader = req.headers.get('Authorization') || '';
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: u } = await supabase.auth.getUser(token);
-      if (u?.user) userId = u.user.id;
-    }
+    const supabase = supa0;
 
     const bin = atob(audioBase64);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
 
-    const fileName = `${userId}/tts-${Date.now()}.mp3`;
+    const folder = userId || 'anon';
+    const fileName = `${folder}/tts-${Date.now()}.mp3`;
     const { error: upErr } = await supabase.storage.from('audios').upload(fileName, bytes, {
       contentType: 'audio/mpeg', upsert: false,
     });
@@ -214,8 +205,20 @@ Deno.serve(async (req) => {
     const ends: number[] = alignment?.character_end_times_seconds || [];
     const duration = ends.length ? Math.ceil(ends[ends.length - 1]) : 0;
 
+    // Save to cache (best-effort)
+    const { error: cacheErr } = await supabase.from('tts_cache').insert({
+      text_hash: textHash,
+      voice,
+      text: normalizedText,
+      audio_url: pub.publicUrl,
+      duration,
+      transcript: segments,
+      user_id: userId,
+    });
+    if (cacheErr) console.warn('[generate-tts] cache insert failed', cacheErr.message);
+
     console.log('[generate-tts] ok, duration:', duration, 'segments:', segments.length);
-    return json(200, { ok: true, audio_url: pub.publicUrl, duration, transcript: segments });
+    return json(200, { ok: true, cached: false, audio_url: pub.publicUrl, duration, transcript: segments });
   } catch (e: any) {
     console.error('[generate-tts] fatal', e?.message, e?.stack);
     return handledError(e?.message || 'Error interno', { error_type: 'unexpected_error' });
