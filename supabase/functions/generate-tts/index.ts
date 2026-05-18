@@ -30,7 +30,15 @@ const KOKORO_VOICE_MAP: Record<string, Partial<Record<Lang, string>>> = {
   'pastor-sereno':        { en: 'am_michael', es: 'em_alex',  fr: 'ff_siwis', pt: 'pm_alex',    it: 'im_nicola' },
   'voz-calida-femenina':  { en: 'af_bella',   es: 'ef_dora',  fr: 'ff_siwis', pt: 'pf_dora',    it: 'if_sara'   },
   'narrador-profundo':    { en: 'bm_george',  es: 'em_santa', fr: 'ff_siwis', pt: 'pm_santa',   it: 'im_nicola' },
-  'voz-angelical':        { en: 'bf_emma',    es: 'ef_dora',  fr: 'ff_siwis', pt: 'pf_dora',    it: 'if_sara'   },
+  // Voz Angelical → voces femeninas más suaves y luminosas (af_sky / af_heart etéreas)
+  'voz-angelical':        { en: 'af_sky',     es: 'ef_dora',  fr: 'ff_siwis', pt: 'pf_dora',    it: 'if_sara'   },
+};
+// Per-voice Kokoro speed (Voz Angelical más lenta para mayor serenidad)
+const KOKORO_VOICE_SPEED: Record<string, number> = {
+  'pastor-sereno': 0.95,
+  'voz-calida-femenina': 1.0,
+  'narrador-profundo': 0.92,
+  'voz-angelical': 0.82,
 };
 // Kokoro lang_code parameter
 const KOKORO_LANG_CODE: Record<Lang, string> = { en: 'a', es: 'e', fr: 'f', pt: 'p', it: 'i', de: 'a', auto: 'a' };
