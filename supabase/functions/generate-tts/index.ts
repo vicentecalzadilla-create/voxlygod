@@ -213,7 +213,7 @@ Deno.serve(async (req) => {
     for (const provider of providerOrder) {
       // Skip if no key for that provider
       if (provider === 'elevenlabs' && !elevenKey) { lastError = { provider, message: 'Sin ELEVENLABS_API_KEY' }; continue; }
-      if (provider === 'kokoro' && !hfKey) { lastError = { provider, message: 'Sin HUGGINGFACE_API_KEY' }; continue; }
+      // Kokoro uses public HF Space — no key required
 
       // Cache lookup (per provider+voice+text)
       const textHash = await sha256Hex(`${provider}::${voice}::${normalizedText}`);
