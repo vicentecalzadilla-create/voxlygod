@@ -193,10 +193,13 @@ Deno.serve(async (req) => {
     const text: string = (body?.text || '').toString();
     const voice: string = (body?.voice || 'pastor-sereno').toString();
     const requestedProvider: Provider = (body?.provider === 'elevenlabs' ? 'elevenlabs' : 'kokoro');
+    const rawLang = (body?.lang || 'auto').toString().toLowerCase();
+    const lang: Lang = (['es','en','fr','pt','it','de','auto'].includes(rawLang) ? rawLang : 'auto') as Lang;
     if (!text.trim()) return handledError('El campo "text" es obligatorio', { error_type: 'invalid_text' });
     if (text.length > 4500) return handledError('Texto demasiado largo (máx 4500 caracteres)', { error_type: 'text_too_long' });
 
     const normalizedText = text.trim().replace(/\s+/g, ' ');
+    console.log('[generate-tts] req', { provider: requestedProvider, voice, lang, chars: normalizedText.length });
 
     const supaUrl0 = Deno.env.get('SUPABASE_URL')!;
     const serviceKey0 = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -211,10 +214,13 @@ Deno.serve(async (req) => {
       if (u?.user) userId = u.user.id;
     }
 
-    // Provider order: requested first, then fallback to the other if available
-    const providerOrder: Provider[] = requestedProvider === 'kokoro'
-      ? ['kokoro', 'elevenlabs']
-      : ['elevenlabs', 'kokoro'];
+    // If language is unsupported by Kokoro, force ElevenLabs first
+    const kokoroOk = !KOKORO_UNSUPPORTED.includes(lang);
+    const providerOrder: Provider[] = !kokoroOk
+      ? ['elevenlabs', 'kokoro']
+      : requestedProvider === 'kokoro'
+        ? ['kokoro', 'elevenlabs']
+        : ['elevenlabs', 'kokoro'];
 
     let lastError: { provider: Provider; message: string; type?: string } | null = null;
 
