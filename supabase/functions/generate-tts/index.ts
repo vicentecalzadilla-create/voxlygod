@@ -10,7 +10,17 @@ const ELEVEN_VOICE_MAP: Record<string, string> = {
   'pastor-sereno': 'JBFqnCBsd6RMkjVDRZzb',
   'voz-calida-femenina': 'EXAVITQu4vr4xnSDxMaL',
   'narrador-profundo': 'nPczCjzI2devNBz1zQrb',
-  'voz-angelical': 'XB0fDUnXU5powFXDhCwa',
+  // Voz Angelical → "Lily" (pFZP5JQG7iQjIQuC4Bku) — femenina muy suave y etérea
+  'voz-angelical': 'pFZP5JQG7iQjIQuC4Bku',
+};
+
+// Per-voice ElevenLabs settings (afina cada voz a su carácter)
+const ELEVEN_VOICE_SETTINGS: Record<string, { stability: number; similarity_boost: number; style: number; use_speaker_boost: boolean; speed?: number }> = {
+  'pastor-sereno':       { stability: 0.55, similarity_boost: 0.70, style: 0.20, use_speaker_boost: true,  speed: 0.98 },
+  'voz-calida-femenina': { stability: 0.55, similarity_boost: 0.75, style: 0.25, use_speaker_boost: true,  speed: 1.00 },
+  'narrador-profundo':   { stability: 0.50, similarity_boost: 0.70, style: 0.20, use_speaker_boost: true,  speed: 0.95 },
+  // Voz Angelical: máxima serenidad, etérea, lenta y celestial
+  'voz-angelical':       { stability: 0.92, similarity_boost: 0.88, style: 0.10, use_speaker_boost: true,  speed: 0.85 },
 };
 
 // Kokoro voice mapping per language (open source TTS)
