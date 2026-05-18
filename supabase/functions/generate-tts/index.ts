@@ -13,13 +13,19 @@ const ELEVEN_VOICE_MAP: Record<string, string> = {
   'voz-angelical': 'XB0fDUnXU5powFXDhCwa',
 };
 
-// Kokoro voice mapping (open source TTS)
-const KOKORO_VOICE_MAP: Record<string, string> = {
-  'pastor-sereno': 'am_michael',
-  'voz-calida-femenina': 'af_bella',
-  'narrador-profundo': 'bm_george',
-  'voz-angelical': 'bf_emma',
+// Kokoro voice mapping per language (open source TTS)
+// Prefixes: a=US-EN, b=UK-EN, e=ES, f=FR, p=PT-BR, i=IT
+type Lang = 'es' | 'en' | 'fr' | 'pt' | 'it' | 'de' | 'auto';
+const KOKORO_VOICE_MAP: Record<string, Partial<Record<Lang, string>>> = {
+  'pastor-sereno':        { en: 'am_michael', es: 'em_alex',  fr: 'ff_siwis', pt: 'pm_alex',    it: 'im_nicola' },
+  'voz-calida-femenina':  { en: 'af_bella',   es: 'ef_dora',  fr: 'ff_siwis', pt: 'pf_dora',    it: 'if_sara'   },
+  'narrador-profundo':    { en: 'bm_george',  es: 'em_santa', fr: 'ff_siwis', pt: 'pm_santa',   it: 'im_nicola' },
+  'voz-angelical':        { en: 'bf_emma',    es: 'ef_dora',  fr: 'ff_siwis', pt: 'pf_dora',    it: 'if_sara'   },
 };
+// Kokoro lang_code parameter
+const KOKORO_LANG_CODE: Record<Lang, string> = { en: 'a', es: 'e', fr: 'f', pt: 'p', it: 'i', de: 'a', auto: 'a' };
+// Languages NOT supported by Kokoro 82M — force ElevenLabs fallback
+const KOKORO_UNSUPPORTED: Lang[] = ['de'];
 
 type Segment = { time: number; text: string };
 type Provider = 'kokoro' | 'elevenlabs';
