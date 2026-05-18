@@ -10,7 +10,17 @@ const ELEVEN_VOICE_MAP: Record<string, string> = {
   'pastor-sereno': 'JBFqnCBsd6RMkjVDRZzb',
   'voz-calida-femenina': 'EXAVITQu4vr4xnSDxMaL',
   'narrador-profundo': 'nPczCjzI2devNBz1zQrb',
-  'voz-angelical': 'XB0fDUnXU5powFXDhCwa',
+  // Voz Angelical → "Lily" (pFZP5JQG7iQjIQuC4Bku) — femenina muy suave y etérea
+  'voz-angelical': 'pFZP5JQG7iQjIQuC4Bku',
+};
+
+// Per-voice ElevenLabs settings (afina cada voz a su carácter)
+const ELEVEN_VOICE_SETTINGS: Record<string, { stability: number; similarity_boost: number; style: number; use_speaker_boost: boolean; speed?: number }> = {
+  'pastor-sereno':       { stability: 0.55, similarity_boost: 0.70, style: 0.20, use_speaker_boost: true,  speed: 0.98 },
+  'voz-calida-femenina': { stability: 0.55, similarity_boost: 0.75, style: 0.25, use_speaker_boost: true,  speed: 1.00 },
+  'narrador-profundo':   { stability: 0.50, similarity_boost: 0.70, style: 0.20, use_speaker_boost: true,  speed: 0.95 },
+  // Voz Angelical: máxima serenidad, etérea, lenta y celestial
+  'voz-angelical':       { stability: 0.92, similarity_boost: 0.88, style: 0.10, use_speaker_boost: true,  speed: 0.85 },
 };
 
 // Kokoro voice mapping per language (open source TTS)
@@ -20,7 +30,15 @@ const KOKORO_VOICE_MAP: Record<string, Partial<Record<Lang, string>>> = {
   'pastor-sereno':        { en: 'am_michael', es: 'em_alex',  fr: 'ff_siwis', pt: 'pm_alex',    it: 'im_nicola' },
   'voz-calida-femenina':  { en: 'af_bella',   es: 'ef_dora',  fr: 'ff_siwis', pt: 'pf_dora',    it: 'if_sara'   },
   'narrador-profundo':    { en: 'bm_george',  es: 'em_santa', fr: 'ff_siwis', pt: 'pm_santa',   it: 'im_nicola' },
-  'voz-angelical':        { en: 'bf_emma',    es: 'ef_dora',  fr: 'ff_siwis', pt: 'pf_dora',    it: 'if_sara'   },
+  // Voz Angelical → voces femeninas más suaves y luminosas (af_sky / af_heart etéreas)
+  'voz-angelical':        { en: 'af_sky',     es: 'ef_dora',  fr: 'ff_siwis', pt: 'pf_dora',    it: 'if_sara'   },
+};
+// Per-voice Kokoro speed (Voz Angelical más lenta para mayor serenidad)
+const KOKORO_VOICE_SPEED: Record<string, number> = {
+  'pastor-sereno': 0.95,
+  'voz-calida-femenina': 1.0,
+  'narrador-profundo': 0.92,
+  'voz-angelical': 0.82,
 };
 // Kokoro lang_code parameter
 const KOKORO_LANG_CODE: Record<Lang, string> = { en: 'a', es: 'e', fr: 'f', pt: 'p', it: 'i', de: 'a', auto: 'a' };
@@ -112,12 +130,13 @@ const KOKORO_SPACE = 'https://remsky-kokoro-tts-zero.hf.space';
 async function generateWithKokoro(text: string, voice: string, lang: Lang): Promise<{ bytes: Uint8Array; contentType: string }> {
   const effectiveLang: Lang = lang === 'auto' || lang === 'de' ? 'en' : lang;
   const kokoroVoice = KOKORO_VOICE_MAP[voice]?.[effectiveLang] || KOKORO_VOICE_MAP['pastor-sereno']?.[effectiveLang] || 'am_michael';
-  console.log('[kokoro] lang', effectiveLang, 'voice', kokoroVoice);
+  const speed = KOKORO_VOICE_SPEED[voice] ?? 1.0;
+  console.log('[kokoro] lang', effectiveLang, 'voice', kokoroVoice, 'speed', speed);
   // Step 1: POST to start job, returns event_id
   const startResp = await fetch(`${KOKORO_SPACE}/gradio_api/call/generate_speech_from_ui`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ data: [text, [kokoroVoice], 1.0] }),
+    body: JSON.stringify({ data: [text, [kokoroVoice], speed] }),
   });
   if (!startResp.ok) {
     const t = await startResp.text();
@@ -292,7 +311,7 @@ Deno.serve(async (req) => {
             body: JSON.stringify({
               text: normalizedText,
               model_id: 'eleven_multilingual_v2',
-              voice_settings: { stability: 0.4, similarity_boost: 0.65, style: 0.15, use_speaker_boost: true },
+              voice_settings: ELEVEN_VOICE_SETTINGS[voice] || { stability: 0.5, similarity_boost: 0.7, style: 0.2, use_speaker_boost: true },
             }),
           });
           if (!resp.ok) {
