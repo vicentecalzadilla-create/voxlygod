@@ -243,6 +243,7 @@ Deno.serve(async (req) => {
           ok: true,
           cached: true,
           provider,
+          lang,
           audio_url: cached.audio_url,
           duration: cached.duration || 0,
           transcript: cached.transcript || [{ time: 0, text }],
