@@ -109,8 +109,10 @@ async function sha256Hex(input: string): Promise<string> {
 
 // --- Kokoro via public HF Space (Remsky/Kokoro-TTS-Zero) ---
 const KOKORO_SPACE = 'https://remsky-kokoro-tts-zero.hf.space';
-async function generateWithKokoro(text: string, voice: string, _hfKey?: string): Promise<{ bytes: Uint8Array; contentType: string }> {
-  const kokoroVoice = KOKORO_VOICE_MAP[voice] || 'am_michael';
+async function generateWithKokoro(text: string, voice: string, lang: Lang): Promise<{ bytes: Uint8Array; contentType: string }> {
+  const effectiveLang: Lang = lang === 'auto' || lang === 'de' ? 'en' : lang;
+  const kokoroVoice = KOKORO_VOICE_MAP[voice]?.[effectiveLang] || KOKORO_VOICE_MAP['pastor-sereno']?.[effectiveLang] || 'am_michael';
+  console.log('[kokoro] lang', effectiveLang, 'voice', kokoroVoice);
   // Step 1: POST to start job, returns event_id
   const startResp = await fetch(`${KOKORO_SPACE}/gradio_api/call/generate_speech_from_ui`, {
     method: 'POST',
