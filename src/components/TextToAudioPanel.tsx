@@ -103,8 +103,11 @@ const TextToAudioPanel = ({ initialText = '', initialVoice = 'pastor-sereno', on
         style={{ background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%), hsl(270 50% 65%))' }}
       >
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-        {loading ? 'Generando voz IA...' : 'Generar audio con voz IA'}
+        {loading ? 'Generando voz IA… (~10–20s)' : 'Generar audio con voz IA'}
       </button>
+      <p className="text-[10px] text-muted-foreground text-center">
+        Caché activado · Reutilizamos audios ya generados para ahorrar créditos · Límite: 8/día
+      </p>
 
       {previewUrl && (
         <div className="space-y-1">
