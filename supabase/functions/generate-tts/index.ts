@@ -61,6 +61,13 @@ function redactHeaders(headers: Headers) {
   return safe;
 }
 
+const DAILY_LIMIT = 8;
+
+async function sha256Hex(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
@@ -75,7 +82,59 @@ Deno.serve(async (req) => {
     if (text.length > 4500) return handledError('Texto demasiado largo (máx 4500 caracteres)', { error_type: 'text_too_long' });
 
     const voiceId = VOICE_MAP[voice] || VOICE_MAP['pastor-sereno'];
-    console.log('[generate-tts] voice:', voice, '->', voiceId, 'len:', text.length);
+    const normalizedText = text.trim().replace(/\s+/g, ' ');
+    const textHash = await sha256Hex(`${voice}::${normalizedText}`);
+    console.log('[generate-tts] voice:', voice, '->', voiceId, 'len:', text.length, 'hash:', textHash.slice(0, 12));
+
+    const supaUrl0 = Deno.env.get('SUPABASE_URL')!;
+    const serviceKey0 = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supa0 = createClient(supaUrl0, serviceKey0);
+
+    // Resolve user id (used for cache attribution + daily limit)
+    let userId: string | null = null;
+    const authHeader0 = req.headers.get('Authorization') || '';
+    if (authHeader0) {
+      const token = authHeader0.replace('Bearer ', '');
+      const { data: u } = await supa0.auth.getUser(token);
+      if (u?.user) userId = u.user.id;
+    }
+
+    // 1) Cache lookup
+    const { data: cached } = await supa0
+      .from('tts_cache')
+      .select('audio_url, duration, transcript')
+      .eq('text_hash', textHash)
+      .eq('voice', voice)
+      .maybeSingle();
+    if (cached?.audio_url) {
+      console.log('[generate-tts] cache HIT');
+      return json(200, {
+        ok: true,
+        cached: true,
+        audio_url: cached.audio_url,
+        duration: cached.duration || 0,
+        transcript: cached.transcript || [{ time: 0, text }],
+      });
+    }
+    console.log('[generate-tts] cache MISS');
+
+    // 2) Daily rate limit (per authenticated user)
+    if (userId) {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { count } = await supa0
+        .from('tts_cache')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', since);
+      if ((count ?? 0) >= DAILY_LIMIT) {
+        console.log('[generate-tts] daily limit reached for', userId, count);
+        return handledError(
+          'Has alcanzado el límite diario de generaciones con voz IA. Vuelve mañana.',
+          { error_type: 'daily_limit_reached', limit: DAILY_LIMIT, used: count }
+        );
+      }
+    }
+
 
     const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps?output_format=mp3_44100_128`;
     const resp = await fetch(url, {
