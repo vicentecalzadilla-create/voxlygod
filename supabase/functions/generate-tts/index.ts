@@ -344,6 +344,7 @@ Deno.serve(async (req) => {
           ok: true,
           cached: false,
           provider,
+          lang,
           fellBack: provider !== requestedProvider,
           audio_url: pub.publicUrl,
           duration,
