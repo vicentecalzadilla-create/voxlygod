@@ -104,6 +104,8 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
             audioId={audio.id}
             cachedTranslations={audio.translations}
             onSeek={(t) => seekTo(audio.id, t)}
+            audioElement={isCurrent ? playback.audioElement : null}
+            duration={duration}
           />
         )}
       </div>
