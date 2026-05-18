@@ -28,8 +28,12 @@ const TextToAudioPanel = ({ initialText = '', initialVoice = 'pastor-sereno', on
   const [text, setText] = useState(initialText);
   const [voice, setVoice] = useState(initialVoice);
   const [provider, setProvider] = useState<TtsProvider>('kokoro');
+  const [langChoice, setLangChoice] = useState<LangChoice>('auto');
   const [loading, setLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const detected = useMemo(() => detectLanguage(text), [text]);
+  const effectiveLang: LangChoice = langChoice === 'auto' ? (detected.confidence > 0 ? detected.lang : 'es') : langChoice;
 
   const generate = async () => {
     if (!text.trim()) {
@@ -38,8 +42,9 @@ const TextToAudioPanel = ({ initialText = '', initialVoice = 'pastor-sereno', on
     }
     setLoading(true);
     try {
+      const sendLang = langChoice === 'auto' ? (detected.confidence > 0 ? detected.lang : 'auto') : langChoice;
       const { data, error } = await supabase.functions.invoke('generate-tts', {
-        body: { text: text.trim(), voice, provider },
+        body: { text: text.trim(), voice, provider, lang: sendLang },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -52,14 +57,18 @@ const TextToAudioPanel = ({ initialText = '', initialVoice = 'pastor-sereno', on
         source_text: text.trim(),
         voice,
         provider: data.provider,
+        lang: data.lang,
       });
       const usedProvider = data.provider === 'elevenlabs' ? 'ElevenLabs' : 'Kokoro';
+      const langLabel = data.lang && LANG_META[data.lang as DetectedLang]
+        ? `${LANG_META[data.lang as DetectedLang].flag} ${LANG_META[data.lang as DetectedLang].label}`
+        : '';
       const title = data.cached
         ? `⚡ Reutilizado del caché (${usedProvider})`
         : data.fellBack
           ? `✨ Audio generado · fallback a ${usedProvider}`
           : `✨ Audio generado con ${usedProvider}`;
-      toast({ title, description: data.cached ? 'Mismo texto + voz ya generados antes — sin consumir créditos.' : 'Voz IA + transcripción sincronizada lista.' });
+      toast({ title, description: `${langLabel ? langLabel + ' · ' : ''}${data.cached ? 'Sin consumir créditos.' : 'Voz IA + transcripción sincronizada lista.'}` });
     } catch (e: any) {
       console.error(e);
       toast({ title: 'No se pudo generar', description: e?.message || 'Inténtalo de nuevo', variant: 'destructive' });
