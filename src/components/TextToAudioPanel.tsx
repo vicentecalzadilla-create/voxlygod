@@ -45,7 +45,7 @@ const TextToAudioPanel = ({ initialText = '', initialVoice = 'pastor-sereno', on
         source_text: text.trim(),
         voice,
       });
-      toast({ title: '✨ Audio generado', description: 'Voz IA + transcripción sincronizada lista.' });
+      toast({ title: data.cached ? '⚡ Reutilizado del caché' : '✨ Audio generado', description: data.cached ? 'Mismo texto + voz ya generados antes — sin consumir créditos.' : 'Voz IA + transcripción sincronizada lista.' });
     } catch (e: any) {
       console.error(e);
       toast({ title: 'No se pudo generar', description: e?.message || 'Inténtalo de nuevo', variant: 'destructive' });
