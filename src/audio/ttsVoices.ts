@@ -13,3 +13,18 @@ export const TTS_VOICES: TtsVoiceOption[] = [
 ];
 
 export type TranscriptSegment = { time: number; text: string };
+
+export type TtsProvider = 'kokoro' | 'elevenlabs';
+
+export interface TtsProviderOption {
+  id: TtsProvider;
+  label: string;
+  badge: string;
+  desc: string;
+  emoji: string;
+}
+
+export const TTS_PROVIDERS: TtsProviderOption[] = [
+  { id: 'kokoro', label: 'Kokoro', badge: 'Gratis', emoji: '🌿', desc: 'IA open-source de alta calidad' },
+  { id: 'elevenlabs', label: 'ElevenLabs', badge: 'Premium', emoji: '💎', desc: 'Voz ultra-realista (cupos limitados)' },
+];
