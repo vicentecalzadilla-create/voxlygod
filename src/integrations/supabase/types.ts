@@ -89,6 +89,42 @@ export type Database = {
         }
         Relationships: []
       }
+      tts_cache: {
+        Row: {
+          audio_url: string
+          created_at: string
+          duration: number | null
+          id: string
+          text: string
+          text_hash: string
+          transcript: Json | null
+          user_id: string | null
+          voice: string
+        }
+        Insert: {
+          audio_url: string
+          created_at?: string
+          duration?: number | null
+          id?: string
+          text: string
+          text_hash: string
+          transcript?: Json | null
+          user_id?: string | null
+          voice: string
+        }
+        Update: {
+          audio_url?: string
+          created_at?: string
+          duration?: number | null
+          id?: string
+          text?: string
+          text_hash?: string
+          transcript?: Json | null
+          user_id?: string | null
+          voice?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
