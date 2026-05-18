@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Sparkles, Loader2, Type } from 'lucide-react';
 import { TTS_VOICES, TTS_PROVIDERS, type TranscriptSegment, type TtsProvider } from '@/audio/ttsVoices';
+import { detectLanguage, LANG_META, type DetectedLang } from '@/audio/detectLanguage';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -11,7 +12,11 @@ export interface TtsResult {
   source_text: string;
   voice: string;
   provider?: TtsProvider;
+  lang?: DetectedLang;
 }
+
+type LangChoice = 'auto' | DetectedLang;
+const LANG_OPTIONS: LangChoice[] = ['auto', 'es', 'en', 'fr', 'pt', 'it', 'de'];
 
 interface Props {
   initialText?: string;
@@ -23,8 +28,12 @@ const TextToAudioPanel = ({ initialText = '', initialVoice = 'pastor-sereno', on
   const [text, setText] = useState(initialText);
   const [voice, setVoice] = useState(initialVoice);
   const [provider, setProvider] = useState<TtsProvider>('kokoro');
+  const [langChoice, setLangChoice] = useState<LangChoice>('auto');
   const [loading, setLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const detected = useMemo(() => detectLanguage(text), [text]);
+  const effectiveLang: LangChoice = langChoice === 'auto' ? (detected.confidence > 0 ? detected.lang : 'es') : langChoice;
 
   const generate = async () => {
     if (!text.trim()) {
@@ -33,8 +42,9 @@ const TextToAudioPanel = ({ initialText = '', initialVoice = 'pastor-sereno', on
     }
     setLoading(true);
     try {
+      const sendLang = langChoice === 'auto' ? (detected.confidence > 0 ? detected.lang : 'auto') : langChoice;
       const { data, error } = await supabase.functions.invoke('generate-tts', {
-        body: { text: text.trim(), voice, provider },
+        body: { text: text.trim(), voice, provider, lang: sendLang },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -47,14 +57,18 @@ const TextToAudioPanel = ({ initialText = '', initialVoice = 'pastor-sereno', on
         source_text: text.trim(),
         voice,
         provider: data.provider,
+        lang: data.lang,
       });
       const usedProvider = data.provider === 'elevenlabs' ? 'ElevenLabs' : 'Kokoro';
+      const langLabel = data.lang && LANG_META[data.lang as DetectedLang]
+        ? `${LANG_META[data.lang as DetectedLang].flag} ${LANG_META[data.lang as DetectedLang].label}`
+        : '';
       const title = data.cached
         ? `⚡ Reutilizado del caché (${usedProvider})`
         : data.fellBack
           ? `✨ Audio generado · fallback a ${usedProvider}`
           : `✨ Audio generado con ${usedProvider}`;
-      toast({ title, description: data.cached ? 'Mismo texto + voz ya generados antes — sin consumir créditos.' : 'Voz IA + transcripción sincronizada lista.' });
+      toast({ title, description: `${langLabel ? langLabel + ' · ' : ''}${data.cached ? 'Sin consumir créditos.' : 'Voz IA + transcripción sincronizada lista.'}` });
     } catch (e: any) {
       console.error(e);
       toast({ title: 'No se pudo generar', description: e?.message || 'Inténtalo de nuevo', variant: 'destructive' });
@@ -80,7 +94,43 @@ const TextToAudioPanel = ({ initialText = '', initialVoice = 'pastor-sereno', on
         placeholder="Escribe o pega aquí tu reflexión, salmo, oración..."
         className="w-full px-3 py-2 rounded-xl bg-card/80 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none shadow-sm"
       />
-      <p className="text-[10px] text-muted-foreground text-right">{text.length}/4500</p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {text.trim().length >= 3 && (
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary"
+              title={langChoice === 'auto' ? 'Idioma detectado automáticamente' : 'Idioma forzado manualmente'}
+            >
+              <span>{LANG_META[effectiveLang as DetectedLang]?.flag}</span>
+              <span>{langChoice === 'auto' ? 'Detectado: ' : 'Forzado: '}{LANG_META[effectiveLang as DetectedLang]?.label}</span>
+            </span>
+          )}
+        </div>
+        <p className="text-[10px] text-muted-foreground">{text.length}/4500</p>
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-[11px] font-medium text-muted-foreground">Idioma</label>
+        <div className="flex flex-wrap gap-1">
+          {LANG_OPTIONS.map(opt => {
+            const isActive = langChoice === opt;
+            const label = opt === 'auto' ? '🔍 Auto' : `${LANG_META[opt].flag} ${LANG_META[opt].label}`;
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => setLangChoice(opt)}
+                className={`px-2 py-1 rounded-full text-[10px] transition-all ${
+                  isActive ? 'bg-primary text-primary-foreground' : 'bg-card/60 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
 
       <div className="space-y-1.5">
         <label className="text-[11px] font-medium text-muted-foreground">Motor de voz IA</label>

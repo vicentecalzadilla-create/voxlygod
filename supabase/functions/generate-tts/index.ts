@@ -13,13 +13,19 @@ const ELEVEN_VOICE_MAP: Record<string, string> = {
   'voz-angelical': 'XB0fDUnXU5powFXDhCwa',
 };
 
-// Kokoro voice mapping (open source TTS)
-const KOKORO_VOICE_MAP: Record<string, string> = {
-  'pastor-sereno': 'am_michael',
-  'voz-calida-femenina': 'af_bella',
-  'narrador-profundo': 'bm_george',
-  'voz-angelical': 'bf_emma',
+// Kokoro voice mapping per language (open source TTS)
+// Prefixes: a=US-EN, b=UK-EN, e=ES, f=FR, p=PT-BR, i=IT
+type Lang = 'es' | 'en' | 'fr' | 'pt' | 'it' | 'de' | 'auto';
+const KOKORO_VOICE_MAP: Record<string, Partial<Record<Lang, string>>> = {
+  'pastor-sereno':        { en: 'am_michael', es: 'em_alex',  fr: 'ff_siwis', pt: 'pm_alex',    it: 'im_nicola' },
+  'voz-calida-femenina':  { en: 'af_bella',   es: 'ef_dora',  fr: 'ff_siwis', pt: 'pf_dora',    it: 'if_sara'   },
+  'narrador-profundo':    { en: 'bm_george',  es: 'em_santa', fr: 'ff_siwis', pt: 'pm_santa',   it: 'im_nicola' },
+  'voz-angelical':        { en: 'bf_emma',    es: 'ef_dora',  fr: 'ff_siwis', pt: 'pf_dora',    it: 'if_sara'   },
 };
+// Kokoro lang_code parameter
+const KOKORO_LANG_CODE: Record<Lang, string> = { en: 'a', es: 'e', fr: 'f', pt: 'p', it: 'i', de: 'a', auto: 'a' };
+// Languages NOT supported by Kokoro 82M — force ElevenLabs fallback
+const KOKORO_UNSUPPORTED: Lang[] = ['de'];
 
 type Segment = { time: number; text: string };
 type Provider = 'kokoro' | 'elevenlabs';
@@ -103,8 +109,10 @@ async function sha256Hex(input: string): Promise<string> {
 
 // --- Kokoro via public HF Space (Remsky/Kokoro-TTS-Zero) ---
 const KOKORO_SPACE = 'https://remsky-kokoro-tts-zero.hf.space';
-async function generateWithKokoro(text: string, voice: string, _hfKey?: string): Promise<{ bytes: Uint8Array; contentType: string }> {
-  const kokoroVoice = KOKORO_VOICE_MAP[voice] || 'am_michael';
+async function generateWithKokoro(text: string, voice: string, lang: Lang): Promise<{ bytes: Uint8Array; contentType: string }> {
+  const effectiveLang: Lang = lang === 'auto' || lang === 'de' ? 'en' : lang;
+  const kokoroVoice = KOKORO_VOICE_MAP[voice]?.[effectiveLang] || KOKORO_VOICE_MAP['pastor-sereno']?.[effectiveLang] || 'am_michael';
+  console.log('[kokoro] lang', effectiveLang, 'voice', kokoroVoice);
   // Step 1: POST to start job, returns event_id
   const startResp = await fetch(`${KOKORO_SPACE}/gradio_api/call/generate_speech_from_ui`, {
     method: 'POST',
@@ -185,10 +193,13 @@ Deno.serve(async (req) => {
     const text: string = (body?.text || '').toString();
     const voice: string = (body?.voice || 'pastor-sereno').toString();
     const requestedProvider: Provider = (body?.provider === 'elevenlabs' ? 'elevenlabs' : 'kokoro');
+    const rawLang = (body?.lang || 'auto').toString().toLowerCase();
+    const lang: Lang = (['es','en','fr','pt','it','de','auto'].includes(rawLang) ? rawLang : 'auto') as Lang;
     if (!text.trim()) return handledError('El campo "text" es obligatorio', { error_type: 'invalid_text' });
     if (text.length > 4500) return handledError('Texto demasiado largo (máx 4500 caracteres)', { error_type: 'text_too_long' });
 
     const normalizedText = text.trim().replace(/\s+/g, ' ');
+    console.log('[generate-tts] req', { provider: requestedProvider, voice, lang, chars: normalizedText.length });
 
     const supaUrl0 = Deno.env.get('SUPABASE_URL')!;
     const serviceKey0 = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -203,10 +214,13 @@ Deno.serve(async (req) => {
       if (u?.user) userId = u.user.id;
     }
 
-    // Provider order: requested first, then fallback to the other if available
-    const providerOrder: Provider[] = requestedProvider === 'kokoro'
-      ? ['kokoro', 'elevenlabs']
-      : ['elevenlabs', 'kokoro'];
+    // If language is unsupported by Kokoro, force ElevenLabs first
+    const kokoroOk = !KOKORO_UNSUPPORTED.includes(lang);
+    const providerOrder: Provider[] = !kokoroOk
+      ? ['elevenlabs', 'kokoro']
+      : requestedProvider === 'kokoro'
+        ? ['kokoro', 'elevenlabs']
+        : ['elevenlabs', 'kokoro'];
 
     let lastError: { provider: Provider; message: string; type?: string } | null = null;
 
@@ -215,8 +229,8 @@ Deno.serve(async (req) => {
       if (provider === 'elevenlabs' && !elevenKey) { lastError = { provider, message: 'Sin ELEVENLABS_API_KEY' }; continue; }
       // Kokoro uses public HF Space — no key required
 
-      // Cache lookup (per provider+voice+text)
-      const textHash = await sha256Hex(`${provider}::${voice}::${normalizedText}`);
+      // Cache lookup (per provider+voice+lang+text)
+      const textHash = await sha256Hex(`${provider}::${lang}::${voice}::${normalizedText}`);
       const { data: cached } = await supa0
         .from('tts_cache')
         .select('audio_url, duration, transcript')
@@ -229,6 +243,7 @@ Deno.serve(async (req) => {
           ok: true,
           cached: true,
           provider,
+          lang,
           audio_url: cached.audio_url,
           duration: cached.duration || 0,
           transcript: cached.transcript || [{ time: 0, text }],
@@ -259,7 +274,7 @@ Deno.serve(async (req) => {
 
         if (provider === 'kokoro') {
           console.log('[generate-tts] trying Kokoro');
-          const { bytes, contentType: ct } = await generateWithKokoro(normalizedText, voice);
+          const { bytes, contentType: ct } = await generateWithKokoro(normalizedText, voice, lang);
           audioBytes = bytes;
           contentType = ct;
           extension = ct.includes('wav') ? 'wav' : ct.includes('flac') ? 'flac' : ct.includes('mpeg') ? 'mp3' : 'wav';
@@ -329,6 +344,7 @@ Deno.serve(async (req) => {
           ok: true,
           cached: false,
           provider,
+          lang,
           fellBack: provider !== requestedProvider,
           audio_url: pub.publicUrl,
           duration,
