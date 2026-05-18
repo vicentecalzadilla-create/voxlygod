@@ -12,7 +12,11 @@ export interface TtsResult {
   source_text: string;
   voice: string;
   provider?: TtsProvider;
+  lang?: DetectedLang;
 }
+
+type LangChoice = 'auto' | DetectedLang;
+const LANG_OPTIONS: LangChoice[] = ['auto', 'es', 'en', 'fr', 'pt', 'it', 'de'];
 
 interface Props {
   initialText?: string;
