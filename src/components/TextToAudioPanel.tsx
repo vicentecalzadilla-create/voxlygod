@@ -45,7 +45,7 @@ const TextToAudioPanel = ({ initialText = '', initialVoice = 'pastor-sereno', on
         source_text: text.trim(),
         voice,
       });
-      toast({ title: '✨ Audio generado', description: 'Voz IA + transcripción sincronizada lista.' });
+      toast({ title: data.cached ? '⚡ Reutilizado del caché' : '✨ Audio generado', description: data.cached ? 'Mismo texto + voz ya generados antes — sin consumir créditos.' : 'Voz IA + transcripción sincronizada lista.' });
     } catch (e: any) {
       console.error(e);
       toast({ title: 'No se pudo generar', description: e?.message || 'Inténtalo de nuevo', variant: 'destructive' });
@@ -103,8 +103,11 @@ const TextToAudioPanel = ({ initialText = '', initialVoice = 'pastor-sereno', on
         style={{ background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%), hsl(270 50% 65%))' }}
       >
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-        {loading ? 'Generando voz IA...' : 'Generar audio con voz IA'}
+        {loading ? 'Generando voz IA… (~10–20s)' : 'Generar audio con voz IA'}
       </button>
+      <p className="text-[10px] text-muted-foreground text-center">
+        Caché activado · Reutilizamos audios ya generados para ahorrar créditos · Límite: 8/día
+      </p>
 
       {previewUrl && (
         <div className="space-y-1">
