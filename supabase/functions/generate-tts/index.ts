@@ -229,8 +229,8 @@ Deno.serve(async (req) => {
       if (provider === 'elevenlabs' && !elevenKey) { lastError = { provider, message: 'Sin ELEVENLABS_API_KEY' }; continue; }
       // Kokoro uses public HF Space — no key required
 
-      // Cache lookup (per provider+voice+text)
-      const textHash = await sha256Hex(`${provider}::${voice}::${normalizedText}`);
+      // Cache lookup (per provider+voice+lang+text)
+      const textHash = await sha256Hex(`${provider}::${lang}::${voice}::${normalizedText}`);
       const { data: cached } = await supa0
         .from('tts_cache')
         .select('audio_url, duration, transcript')
