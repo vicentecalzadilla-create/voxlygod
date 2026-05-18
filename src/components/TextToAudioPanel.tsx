@@ -94,7 +94,43 @@ const TextToAudioPanel = ({ initialText = '', initialVoice = 'pastor-sereno', on
         placeholder="Escribe o pega aquí tu reflexión, salmo, oración..."
         className="w-full px-3 py-2 rounded-xl bg-card/80 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none shadow-sm"
       />
-      <p className="text-[10px] text-muted-foreground text-right">{text.length}/4500</p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {text.trim().length >= 3 && (
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary"
+              title={langChoice === 'auto' ? 'Idioma detectado automáticamente' : 'Idioma forzado manualmente'}
+            >
+              <span>{LANG_META[effectiveLang as DetectedLang]?.flag}</span>
+              <span>{langChoice === 'auto' ? 'Detectado: ' : 'Forzado: '}{LANG_META[effectiveLang as DetectedLang]?.label}</span>
+            </span>
+          )}
+        </div>
+        <p className="text-[10px] text-muted-foreground">{text.length}/4500</p>
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-[11px] font-medium text-muted-foreground">Idioma</label>
+        <div className="flex flex-wrap gap-1">
+          {LANG_OPTIONS.map(opt => {
+            const isActive = langChoice === opt;
+            const label = opt === 'auto' ? '🔍 Auto' : `${LANG_META[opt].flag} ${LANG_META[opt].label}`;
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => setLangChoice(opt)}
+                className={`px-2 py-1 rounded-full text-[10px] transition-all ${
+                  isActive ? 'bg-primary text-primary-foreground' : 'bg-card/60 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
 
       <div className="space-y-1.5">
         <label className="text-[11px] font-medium text-muted-foreground">Motor de voz IA</label>
