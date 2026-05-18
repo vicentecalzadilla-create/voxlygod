@@ -130,12 +130,13 @@ const KOKORO_SPACE = 'https://remsky-kokoro-tts-zero.hf.space';
 async function generateWithKokoro(text: string, voice: string, lang: Lang): Promise<{ bytes: Uint8Array; contentType: string }> {
   const effectiveLang: Lang = lang === 'auto' || lang === 'de' ? 'en' : lang;
   const kokoroVoice = KOKORO_VOICE_MAP[voice]?.[effectiveLang] || KOKORO_VOICE_MAP['pastor-sereno']?.[effectiveLang] || 'am_michael';
-  console.log('[kokoro] lang', effectiveLang, 'voice', kokoroVoice);
+  const speed = KOKORO_VOICE_SPEED[voice] ?? 1.0;
+  console.log('[kokoro] lang', effectiveLang, 'voice', kokoroVoice, 'speed', speed);
   // Step 1: POST to start job, returns event_id
   const startResp = await fetch(`${KOKORO_SPACE}/gradio_api/call/generate_speech_from_ui`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ data: [text, [kokoroVoice], 1.0] }),
+    body: JSON.stringify({ data: [text, [kokoroVoice], speed] }),
   });
   if (!startResp.ok) {
     const t = await startResp.text();
