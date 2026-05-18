@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Sparkles, Loader2, Type } from 'lucide-react';
 import { TTS_VOICES, TTS_PROVIDERS, type TranscriptSegment, type TtsProvider } from '@/audio/ttsVoices';
+import { detectLanguage, LANG_META, type DetectedLang } from '@/audio/detectLanguage';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
