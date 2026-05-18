@@ -259,7 +259,7 @@ Deno.serve(async (req) => {
 
         if (provider === 'kokoro') {
           console.log('[generate-tts] trying Kokoro');
-          const { bytes, contentType: ct } = await generateWithKokoro(normalizedText, voice, hfKey!);
+          const { bytes, contentType: ct } = await generateWithKokoro(normalizedText, voice);
           audioBytes = bytes;
           contentType = ct;
           extension = ct.includes('wav') ? 'wav' : ct.includes('flac') ? 'flac' : ct.includes('mpeg') ? 'mp3' : 'wav';
