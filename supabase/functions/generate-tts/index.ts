@@ -101,42 +101,77 @@ async function sha256Hex(input: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// --- Kokoro via HuggingFace Inference ---
-async function generateWithKokoro(text: string, voice: string, hfKey: string): Promise<{ bytes: Uint8Array; contentType: string }> {
+// --- Kokoro via public HF Space (Remsky/Kokoro-TTS-Zero) ---
+const KOKORO_SPACE = 'https://remsky-kokoro-tts-zero.hf.space';
+async function generateWithKokoro(text: string, voice: string, _hfKey?: string): Promise<{ bytes: Uint8Array; contentType: string }> {
   const kokoroVoice = KOKORO_VOICE_MAP[voice] || 'am_michael';
-  // hexgrad/Kokoro-82M HF Inference endpoint
-  const url = 'https://api-inference.huggingface.co/models/hexgrad/Kokoro-82M';
-  const resp = await fetch(url, {
+  // Step 1: POST to start job, returns event_id
+  const startResp = await fetch(`${KOKORO_SPACE}/gradio_api/call/generate_speech_from_ui`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${hfKey}`,
-      'Content-Type': 'application/json',
-      'Accept': 'audio/wav',
-    },
-    body: JSON.stringify({
-      inputs: text,
-      parameters: { voice: kokoroVoice },
-      options: { wait_for_model: true },
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data: [text, [kokoroVoice], 1.0] }),
   });
-  if (!resp.ok) {
-    const errTxt = await resp.text();
-    console.error('[kokoro] HF error', {
-      status: resp.status,
-      statusText: resp.statusText,
-      headers: redactHeaders(resp.headers),
-      body: errTxt.slice(0, 1000),
-    });
-    throw new Error(`Kokoro HF ${resp.status}: ${errTxt.slice(0, 200)}`);
+  if (!startResp.ok) {
+    const t = await startResp.text();
+    throw new Error(`Kokoro Space start ${startResp.status}: ${t.slice(0, 200)}`);
   }
-  const contentType = resp.headers.get('content-type') || 'audio/wav';
-  if (contentType.includes('application/json')) {
-    const j = await resp.json().catch(() => ({}));
-    console.error('[kokoro] HF returned JSON instead of audio', j);
-    throw new Error(`Kokoro returned JSON: ${JSON.stringify(j).slice(0, 200)}`);
+  const startJson = await startResp.json();
+  const eventId = startJson?.event_id;
+  if (!eventId) throw new Error('Kokoro Space: no event_id');
+
+  // Step 2: stream result (SSE-style)
+  const resultResp = await fetch(`${KOKORO_SPACE}/gradio_api/call/generate_speech_from_ui/${eventId}`, {
+    method: 'GET',
+    headers: { 'Accept': 'text/event-stream' },
+  });
+  if (!resultResp.ok || !resultResp.body) {
+    throw new Error(`Kokoro Space result ${resultResp.status}`);
   }
-  const buf = new Uint8Array(await resp.arrayBuffer());
-  return { bytes: buf, contentType };
+
+  // Read the stream, parse "event: complete" + "data: [...]"
+  const reader = resultResp.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  let audioUrl: string | null = null;
+  let lastEvent = '';
+  const deadline = Date.now() + 60_000;
+  while (Date.now() < deadline) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop() || '';
+    for (const line of lines) {
+      if (line.startsWith('event:')) {
+        lastEvent = line.slice(6).trim();
+      } else if (line.startsWith('data:')) {
+        const payload = line.slice(5).trim();
+        if (lastEvent === 'complete' && payload && payload !== 'null') {
+          try {
+            const parsed = JSON.parse(payload);
+            const file = Array.isArray(parsed) ? parsed[0] : parsed;
+            audioUrl = file?.url || null;
+          } catch (e) {
+            console.error('[kokoro] parse error', e, payload.slice(0, 200));
+          }
+        } else if (lastEvent === 'error') {
+          throw new Error(`Kokoro Space error: ${payload.slice(0, 300)}`);
+        }
+      }
+    }
+    if (audioUrl) break;
+  }
+  reader.cancel().catch(() => {});
+
+  if (!audioUrl) throw new Error('Kokoro Space: no audio URL en respuesta');
+  console.log('[kokoro] got audio url', audioUrl);
+
+  // Download WAV bytes
+  const audioResp = await fetch(audioUrl);
+  if (!audioResp.ok) throw new Error(`Kokoro audio download ${audioResp.status}`);
+  const bytes = new Uint8Array(await audioResp.arrayBuffer());
+  const contentType = audioResp.headers.get('content-type') || 'audio/wav';
+  return { bytes, contentType };
 }
 
 Deno.serve(async (req) => {
