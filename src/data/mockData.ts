@@ -11,7 +11,7 @@ export interface AudioPost {
   tags: string[];
   verse?: string;
   category: string;
-  visualEffect: 'light-rays' | 'cross' | 'clouds' | 'candles' | 'bible';
+  visualEffect: 'light-rays' | 'cross' | 'clouds' | 'candles' | 'bible' | 'starfield';
   isLiked: boolean;
   isSaved: boolean;
   allowImmersiveEffects: boolean;
