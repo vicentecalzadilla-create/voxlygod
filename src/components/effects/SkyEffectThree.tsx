@@ -6,9 +6,8 @@ interface SkyEffectThreeProps {
 }
 
 /**
- * Lightweight celestial "Cielo" effect using a single Canvas for particles
- * plus CSS layers for god rays, gradient sky and ethereal glow.
- * No Three.js — keeps things fast, smooth and premium.
+ * Celestial "Cielo" effect — deep blue-to-black sky with floating golden
+ * particles, soft god rays and audio-reactive motion. Canvas + CSS, no WebGL.
  */
 const SkyEffectThree = ({ isPlaying }: SkyEffectThreeProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -36,28 +35,31 @@ const SkyEffectThree = ({ isPlaying }: SkyEffectThreeProps) => {
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
 
-    // Particles
-    const COUNT = 70;
     type P = {
       x: number; y: number;
       r: number;
       baseAlpha: number;
       vx: number; vy: number;
       twPhase: number; twSpeed: number;
-      gold: boolean;
+      tone: 0 | 1 | 2; // 0 gold, 1 white, 2 cream
     };
     const rand = (a: number, b: number) => a + Math.random() * (b - a);
-    const particles: P[] = Array.from({ length: COUNT }, () => ({
-      x: Math.random() * width,
-      y: Math.random() * height,
-      r: rand(0.6, 2.2),
-      baseAlpha: rand(0.35, 0.9),
-      vx: rand(-0.05, 0.05),
-      vy: rand(-0.12, -0.02),
-      twPhase: Math.random() * Math.PI * 2,
-      twSpeed: rand(0.6, 1.6),
-      gold: Math.random() > 0.45,
-    }));
+
+    const COUNT = 140;
+    const particles: P[] = Array.from({ length: COUNT }, () => {
+      const t = Math.random();
+      return {
+        x: Math.random() * width,
+        y: Math.random() * height,
+        r: rand(0.5, 2.0),
+        baseAlpha: rand(0.4, 0.95),
+        vx: rand(-0.06, 0.06),
+        vy: rand(-0.22, -0.05),
+        twPhase: Math.random() * Math.PI * 2,
+        twSpeed: rand(0.6, 1.8),
+        tone: t < 0.55 ? 0 : t < 0.85 ? 1 : 2,
+      };
+    });
 
     let smoothLevel = 0;
     let last = performance.now();
@@ -72,10 +74,10 @@ const SkyEffectThree = ({ isPlaying }: SkyEffectThreeProps) => {
       ctx.clearRect(0, 0, width, height);
 
       const t = now / 1000;
-      const speedBoost = 1 + smoothLevel * 1.6;
+      const speedBoost = 1 + smoothLevel * 1.8;
 
       for (const p of particles) {
-        p.x += p.vx * speedBoost * 60 * dt + Math.sin(t * 0.5 + p.twPhase) * 0.08;
+        p.x += p.vx * speedBoost * 60 * dt + Math.sin(t * 0.4 + p.twPhase) * 0.1;
         p.y += p.vy * speedBoost * 60 * dt;
 
         if (p.y < -5) {
@@ -85,23 +87,27 @@ const SkyEffectThree = ({ isPlaying }: SkyEffectThreeProps) => {
         if (p.x < -5) p.x = width + 5;
         else if (p.x > width + 5) p.x = -5;
 
-        const tw = 0.55 + 0.45 * Math.sin(t * p.twSpeed + p.twPhase);
-        const a = p.baseAlpha * tw * (0.7 + smoothLevel * 0.5);
-        const r = p.r * (1 + smoothLevel * 0.25);
+        const tw = 0.5 + 0.5 * Math.sin(t * p.twSpeed + p.twPhase);
+        const a = p.baseAlpha * tw * (0.7 + smoothLevel * 0.6);
+        const r = p.r * (1 + smoothLevel * 0.35);
 
-        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 6);
-        if (p.gold) {
-          g.addColorStop(0, `rgba(255, 232, 170, ${a})`);
-          g.addColorStop(0.4, `rgba(255, 210, 130, ${a * 0.35})`);
-          g.addColorStop(1, 'rgba(255, 200, 120, 0)');
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 7);
+        if (p.tone === 0) {
+          g.addColorStop(0, `rgba(255, 224, 150, ${a})`);
+          g.addColorStop(0.35, `rgba(255, 200, 110, ${a * 0.35})`);
+          g.addColorStop(1, 'rgba(255, 190, 100, 0)');
+        } else if (p.tone === 1) {
+          g.addColorStop(0, `rgba(255, 255, 255, ${a})`);
+          g.addColorStop(0.35, `rgba(230, 240, 255, ${a * 0.3})`);
+          g.addColorStop(1, 'rgba(220, 235, 255, 0)');
         } else {
-          g.addColorStop(0, `rgba(255, 250, 235, ${a})`);
-          g.addColorStop(0.4, `rgba(255, 240, 210, ${a * 0.3})`);
-          g.addColorStop(1, 'rgba(255, 240, 210, 0)');
+          g.addColorStop(0, `rgba(255, 245, 220, ${a})`);
+          g.addColorStop(0.35, `rgba(255, 230, 190, ${a * 0.3})`);
+          g.addColorStop(1, 'rgba(255, 230, 190, 0)');
         }
         ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, r * 6, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, r * 7, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -120,29 +126,39 @@ const SkyEffectThree = ({ isPlaying }: SkyEffectThreeProps) => {
       className="absolute inset-0 pointer-events-none animate-fade-in"
       style={{ transition: 'opacity 700ms ease' }}
     >
-      {/* Sky gradient base */}
+      {/* Deep night sky gradient */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(180deg, hsl(45 100% 96% / 0.85) 0%, hsl(40 90% 90% / 0.7) 45%, hsl(35 80% 82% / 0.55) 100%)',
+            'radial-gradient(ellipse at 50% 15%, hsl(220 60% 18%) 0%, hsl(225 70% 8%) 45%, hsl(230 80% 3%) 100%)',
         }}
       />
 
-      {/* God rays — pure CSS, very soft */}
+      {/* Warm gold glow at top */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse at 50% 0%, hsl(42 90% 65% / 0.35), transparent 55%)',
+          mixBlendMode: 'screen',
+        }}
+      />
+
+      {/* God rays */}
       <div className="absolute inset-0 overflow-hidden" style={{ mixBlendMode: 'screen' }}>
-        {[-22, -10, 0, 10, 22].map((angle, i) => (
+        {[-24, -12, 0, 12, 24].map((angle, i) => (
           <div
             key={i}
             className="absolute left-1/2 top-0 origin-top"
             style={{
-              width: i === 2 ? '120px' : '80px',
+              width: i === 2 ? '140px' : '90px',
               height: '140%',
               transform: `translateX(-50%) rotate(${angle}deg)`,
-              background: `linear-gradient(to bottom, hsl(45 100% 88% / ${0.32 - Math.abs(angle) * 0.006}) 0%, hsl(40 95% 78% / ${0.18 - Math.abs(angle) * 0.004}) 35%, transparent 75%)`,
-              filter: 'blur(18px)',
-              animation: `pulse-glow ${5 + i * 0.6}s ease-in-out infinite`,
-              animationDelay: `${i * 0.4}s`,
+              background: `linear-gradient(to bottom, hsl(45 100% 80% / ${0.38 - Math.abs(angle) * 0.008}) 0%, hsl(40 95% 70% / ${0.18 - Math.abs(angle) * 0.004}) 40%, transparent 80%)`,
+              filter: 'blur(22px)',
+              animation: `pulse-glow ${5 + i * 0.7}s ease-in-out infinite`,
+              animationDelay: `${i * 0.5}s`,
             }}
           />
         ))}
@@ -155,21 +171,12 @@ const SkyEffectThree = ({ isPlaying }: SkyEffectThreeProps) => {
         style={{ mixBlendMode: 'screen' }}
       />
 
-      {/* Warm ethereal glow */}
+      {/* Subtle vignette */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(ellipse at 50% 18%, hsl(45 100% 92% / 0.55), transparent 55%), radial-gradient(ellipse at 50% 90%, hsl(35 85% 78% / 0.3), transparent 60%)',
-          mixBlendMode: 'screen',
-        }}
-      />
-
-      {/* Subtle vignette for depth */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background: 'radial-gradient(ellipse at center, transparent 55%, hsl(30 40% 30% / 0.18) 100%)',
+            'radial-gradient(ellipse at center, transparent 50%, hsl(230 80% 2% / 0.55) 100%)',
         }}
       />
     </div>
