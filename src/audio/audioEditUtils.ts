@@ -103,6 +103,7 @@ export const VISUAL_EFFECTS = [
   { id: 'clouds', label: 'Cielo', emoji: '☁️' },
   { id: 'candles', label: 'Velas', emoji: '🕯️' },
   { id: 'bible', label: 'Biblia', emoji: '📖' },
+  { id: 'starfield', label: 'Estrellas Celestiales', emoji: '🌌' },
 ] as const;
 
 export const fmtTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60 | 0).toString().padStart(2, '0')}`;
