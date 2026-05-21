@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, Suspense, lazy } from 'react';
 import { getAudioEffectsEngine } from '@/audio/AudioEffectsEngine';
 
 const SkyEffectThree = lazy(() => import('./effects/SkyEffectThree'));
+const StarfieldEffect = lazy(() => import('./effects/StarfieldEffect'));
 
 interface AudioVisualizerProps {
   isPlaying: boolean;
