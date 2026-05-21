@@ -201,96 +201,10 @@ const AudioVisualizer = ({ isPlaying, effect }: AudioVisualizerProps) => {
 
       {/* CLOUDS — Cielo etéreo celestial */}
       {effect === 'clouds' && (
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {/* Sky gradient base — soft cream to gold */}
-          <div className="absolute inset-0" style={{
-            background: 'linear-gradient(180deg, hsl(45 90% 95% / 0.55) 0%, hsl(40 80% 88% / 0.35) 35%, hsl(35 70% 82% / 0.2) 70%, transparent 100%)',
-          }} />
-
-          {/* Soft luminous clouds — multiple layers for depth */}
-          {[
-            { w: 220, h: 90, l: -5,  t: 8,  d: 22, delay: 0,   opacity: 0.85, tint: '45 95% 97%' },
-            { w: 180, h: 75, l: 55,  t: 18, d: 28, delay: 2.5, opacity: 0.75, tint: '40 90% 95%' },
-            { w: 260, h: 105, l: 20, t: 32, d: 32, delay: 1.2, opacity: 0.8,  tint: '42 85% 94%' },
-            { w: 200, h: 85, l: 65,  t: 48, d: 26, delay: 4,   opacity: 0.7,  tint: '38 80% 92%' },
-            { w: 240, h: 95, l: -10, t: 62, d: 34, delay: 3,   opacity: 0.65, tint: '45 85% 95%' },
-            { w: 170, h: 70, l: 45,  t: 72, d: 24, delay: 1.8, opacity: 0.6,  tint: '40 80% 93%' },
-          ].map((c, i) => (
-            <div
-              key={`cloud-${i}`}
-              className="absolute rounded-full"
-              style={{
-                width: `${c.w}px`,
-                height: `${c.h}px`,
-                left: `${c.l}%`,
-                top: `${c.t}%`,
-                background: `radial-gradient(ellipse, hsl(${c.tint} / ${c.opacity}) 0%, hsl(${c.tint} / ${c.opacity * 0.5}) 35%, hsl(45 90% 88% / ${c.opacity * 0.15}) 65%, transparent 80%)`,
-                filter: `blur(${14 + (i % 3) * 4}px)`,
-                animation: isPlaying
-                  ? `drift ${c.d}s ease-in-out infinite, pulse-glow ${8 + i}s ease-in-out infinite`
-                  : `drift ${c.d * 1.6}s ease-in-out infinite`,
-                animationDelay: `${c.delay}s, ${c.delay * 0.7}s`,
-                opacity: 0.85 + intensity * 0.15,
-                mixBlendMode: 'screen',
-              }}
-            />
-          ))}
-
-          {/* Delicate god rays piercing through the clouds */}
-          <div className="absolute inset-0" style={{ mixBlendMode: 'screen' }}>
-            {[-18, -6, 6, 18].map((angle, i) => (
-              <div
-                key={`sky-ray-${i}`}
-                className="absolute left-1/2 top-0 origin-top"
-                style={{
-                  width: `${70 + (i % 2) * 30}px`,
-                  height: '130%',
-                  transform: `translateX(-50%) rotate(${angle}deg)`,
-                  background: `linear-gradient(to bottom, hsl(45 100% 92% / ${(0.4 + intensity * 0.35) * (i % 2 ? 0.7 : 1)}) 0%, hsl(42 95% 85% / ${(0.2 + intensity * 0.2)}) 30%, transparent 75%)`,
-                  filter: 'blur(18px)',
-                  animation: isPlaying ? `pulse-glow ${5 + i * 0.6}s ease-in-out infinite` : 'none',
-                  animationDelay: `${i * 0.7}s`,
-                  opacity: 0.9,
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Fine floating gold & white particles */}
-          {Array.from({ length: 22 }).map((_, i) => {
-            const left = (i * 37) % 100;
-            const top = (i * 53) % 100;
-            const size = 1.5 + ((i * 7) % 4) * 0.6;
-            const isGold = i % 2 === 0;
-            const color = isGold ? 'hsl(45 95% 78%)' : 'hsl(45 100% 96%)';
-            return (
-              <div
-                key={`sky-particle-${i}`}
-                className="absolute rounded-full"
-                style={{
-                  left: `${left}%`,
-                  top: `${top}%`,
-                  width: `${size}px`,
-                  height: `${size}px`,
-                  background: color,
-                  boxShadow: `0 0 ${6 + size * 2}px ${color}, 0 0 ${12 + size * 3}px hsl(45 95% 85% / 0.6)`,
-                  opacity: (0.5 + ((i * 3) % 5) / 10) * (0.6 + intensity * 0.5),
-                  animation: isPlaying
-                    ? `drift ${10 + (i % 7)}s ease-in-out infinite, sparkle ${3 + (i % 4)}s ease-in-out infinite`
-                    : `drift ${14 + (i % 5)}s ease-in-out infinite`,
-                  animationDelay: `${(i % 6) * 0.5}s, ${(i % 5) * 0.4}s`,
-                }}
-              />
-            );
-          })}
-
-          {/* Warm ethereal glow overlay */}
-          <div className="absolute inset-0" style={{
-            background: 'radial-gradient(ellipse at 50% 20%, hsl(45 100% 90% / 0.35) 0%, hsl(40 90% 85% / 0.15) 40%, transparent 75%)',
-            mixBlendMode: 'screen',
-            opacity: 0.7 + intensity * 0.3,
-            transition: 'opacity 400ms ease-out',
-          }} />
+        <div className="absolute inset-0 overflow-hidden pointer-events-none animate-fade-in">
+          <Suspense fallback={<div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, hsl(45 90% 95% / 0.5), hsl(40 80% 88% / 0.2))' }} />}>
+            <SkyEffectThree isPlaying={isPlaying} />
+          </Suspense>
         </div>
       )}
 
