@@ -58,15 +58,12 @@ const StarfieldEffect = ({ isPlaying }: StarfieldEffectProps) => {
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
 
-    const engine = getAudioEffectsEngine();
-    // @ts-expect-error: optional helpers exposed by the engine
-    const analyser: AnalyserNode | null = engine['analyserNode'] || null;
+    const engine = getAudioEffectsEngine() as unknown as { analyserNode: AnalyserNode | null };
 
     let freqData: Uint8Array | null = null;
     let timeData: Uint8Array | null = null;
     const ensureBuffers = () => {
-      // @ts-expect-error: private property access by design
-      const a: AnalyserNode | null = engine['analyserNode'];
+      const a = engine.analyserNode;
       if (a) {
         if (!freqData || freqData.length !== a.frequencyBinCount) {
           freqData = new Uint8Array(a.frequencyBinCount);
