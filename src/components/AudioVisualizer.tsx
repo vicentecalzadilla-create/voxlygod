@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, Suspense, lazy } from 'react';
 import { getAudioEffectsEngine } from '@/audio/AudioEffectsEngine';
 
 const SkyEffectThree = lazy(() => import('./effects/SkyEffectThree'));
+const StarfieldEffect = lazy(() => import('./effects/StarfieldEffect'));
 
 interface AudioVisualizerProps {
   isPlaying: boolean;
@@ -204,6 +205,15 @@ const AudioVisualizer = ({ isPlaying, effect }: AudioVisualizerProps) => {
         <div className="absolute inset-0 overflow-hidden pointer-events-none animate-fade-in">
           <Suspense fallback={<div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, hsl(45 90% 95% / 0.5), hsl(40 80% 88% / 0.2))' }} />}>
             <SkyEffectThree isPlaying={isPlaying} />
+          </Suspense>
+        </div>
+      )}
+
+      {/* STARFIELD — Estrellas Celestiales */}
+      {effect === 'starfield' && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none animate-fade-in">
+          <Suspense fallback={<div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, hsl(225 60% 12%), hsl(230 80% 3%))' }} />}>
+            <StarfieldEffect isPlaying={isPlaying} />
           </Suspense>
         </div>
       )}
