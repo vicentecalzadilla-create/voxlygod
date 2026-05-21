@@ -432,6 +432,23 @@ class AudioEffectsEngine {
     return Math.min(1, sum / (this.analyserData.length * 180));
   }
 
+  /** Returns a snapshot of the frequency data (0-255) or null if not connected. */
+  getFrequencyData(): Uint8Array | null {
+    if (!this.analyserNode || !this.analyserData) return null;
+    this.analyserNode.getByteFrequencyData(this.analyserData);
+    return this.analyserData;
+  }
+
+  /** Normalised bass energy 0-1 from the lower portion of the spectrum. */
+  getBass(): number {
+    const data = this.getFrequencyData();
+    if (!data) return 0;
+    const n = Math.max(1, Math.floor(data.length * 0.25));
+    let s = 0;
+    for (let i = 0; i < n; i++) s += data[i];
+    return Math.min(1, s / (n * 200));
+  }
+
   dispose(): void {
     this.disconnectAll();
     this.sourceNode = null;
