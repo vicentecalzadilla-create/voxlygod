@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, Suspense, lazy } from 'react';
 import { getAudioEffectsEngine } from '@/audio/AudioEffectsEngine';
+
+const SkyEffectThree = lazy(() => import('./effects/SkyEffectThree'));
 
 interface AudioVisualizerProps {
   isPlaying: boolean;
