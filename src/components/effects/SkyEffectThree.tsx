@@ -1,206 +1,177 @@
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
-import * as THREE from 'three';
+import { useEffect, useRef } from 'react';
 import { getAudioEffectsEngine } from '@/audio/AudioEffectsEngine';
 
 interface SkyEffectThreeProps {
   isPlaying: boolean;
 }
 
-// Soft round sprite texture generated once
-function useSoftTexture() {
-  return useMemo(() => {
-    const size = 128;
-    const c = document.createElement('canvas');
-    c.width = c.height = size;
-    const ctx = c.getContext('2d')!;
-    const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-    g.addColorStop(0, 'rgba(255,255,255,1)');
-    g.addColorStop(0.35, 'rgba(255,240,200,0.7)');
-    g.addColorStop(1, 'rgba(255,220,160,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, size, size);
-    const tex = new THREE.CanvasTexture(c);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    return tex;
-  }, []);
-}
-
-function CloudPuff({ position, scale, tint, speed, phase }: { position: [number, number, number]; scale: number; tint: THREE.Color; speed: number; phase: number; }) {
-  const tex = useSoftTexture();
-  const ref = useRef<THREE.Sprite>(null);
-  const base = useRef(position[0]);
-  useFrame(({ clock }) => {
-    if (!ref.current) return;
-    const t = clock.getElapsedTime();
-    const level = getAudioEffectsEngine().getLevel();
-    ref.current.position.x = base.current + Math.sin(t * speed + phase) * (0.4 + level * 0.6);
-    ref.current.position.y = position[1] + Math.cos(t * speed * 0.7 + phase) * 0.15;
-    const s = scale * (1 + level * 0.06);
-    ref.current.scale.set(s, s * 0.55, 1);
-    (ref.current.material as THREE.SpriteMaterial).opacity = 0.55 + level * 0.25;
-  });
-  return (
-    <sprite ref={ref} position={position}>
-      <spriteMaterial map={tex} color={tint} transparent depthWrite={false} blending={THREE.AdditiveBlending} opacity={0.7} />
-    </sprite>
-  );
-}
-
-function Particles({ count = 220 }: { count?: number }) {
-  const tex = useSoftTexture();
-  const ref = useRef<THREE.Points>(null);
-  const { geometry, basePositions, speeds, phases } = useMemo(() => {
-    const positions = new Float32Array(count * 3);
-    const colors = new Float32Array(count * 3);
-    const sizes = new Float32Array(count);
-    const speeds = new Float32Array(count);
-    const phases = new Float32Array(count);
-    const gold = new THREE.Color('#ffd98a');
-    const white = new THREE.Color('#fff7e0');
-    for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 14;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 8;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 4;
-      const c = Math.random() > 0.5 ? gold : white;
-      colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
-      sizes[i] = 0.05 + Math.random() * 0.12;
-      speeds[i] = 0.15 + Math.random() * 0.4;
-      phases[i] = Math.random() * Math.PI * 2;
-    }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-    return { geometry, basePositions: positions.slice(), speeds, phases };
-  }, [count]);
-
-  useFrame(({ clock }) => {
-    if (!ref.current) return;
-    const t = clock.getElapsedTime();
-    const level = getAudioEffectsEngine().getLevel();
-    const pos = ref.current.geometry.attributes.position as THREE.BufferAttribute;
-    for (let i = 0; i < count; i++) {
-      const ix = i * 3;
-      pos.array[ix] = basePositions[ix] + Math.sin(t * speeds[i] + phases[i]) * (0.3 + level * 0.7);
-      pos.array[ix + 1] = basePositions[ix + 1] + Math.cos(t * speeds[i] * 0.8 + phases[i]) * (0.25 + level * 0.5) + ((t * speeds[i] * 0.15) % 6 - 3) * 0.05;
-    }
-    pos.needsUpdate = true;
-    const mat = ref.current.material as THREE.PointsMaterial;
-    mat.opacity = 0.7 + level * 0.3;
-    mat.size = 0.18 + level * 0.12;
-  });
-
-  return (
-    <points ref={ref} geometry={geometry}>
-      <pointsMaterial
-        map={tex}
-        size={0.18}
-        sizeAttenuation
-        vertexColors
-        transparent
-        depthWrite={false}
-        blending={THREE.AdditiveBlending}
-        opacity={0.85}
-      />
-    </points>
-  );
-}
-
-function GodRays() {
-  const group = useRef<THREE.Group>(null);
-  const tex = useSoftTexture();
-  const rays = useMemo(() => [-0.5, -0.2, 0, 0.18, 0.45], []);
-  useFrame(({ clock }) => {
-    if (!group.current) return;
-    const t = clock.getElapsedTime();
-    const level = getAudioEffectsEngine().getLevel();
-    group.current.children.forEach((child, i) => {
-      const m = (child as THREE.Mesh).material as THREE.MeshBasicMaterial;
-      m.opacity = 0.12 + Math.abs(Math.sin(t * 0.6 + i)) * 0.18 + level * 0.25;
-    });
-  });
-  return (
-    <group ref={group} position={[0, 2, -1]}>
-      {rays.map((x, i) => (
-        <mesh key={i} position={[x * 3, 0, 0]} rotation={[0, 0, x * 0.25]}>
-          <planeGeometry args={[1.6, 9]} />
-          <meshBasicMaterial
-            map={tex}
-            color={new THREE.Color('#fff2c8')}
-            transparent
-            depthWrite={false}
-            blending={THREE.AdditiveBlending}
-            opacity={0.25}
-          />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function SkyBackground() {
-  return (
-    <mesh position={[0, 0, -5]}>
-      <planeGeometry args={[40, 24]} />
-      <shaderMaterial
-        transparent
-        uniforms={{
-          topColor: { value: new THREE.Color('#fff5dc') },
-          midColor: { value: new THREE.Color('#fde4b8') },
-          botColor: { value: new THREE.Color('#f3c98a') },
-        }}
-        vertexShader={`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);} `}
-        fragmentShader={`
-          varying vec2 vUv;
-          uniform vec3 topColor; uniform vec3 midColor; uniform vec3 botColor;
-          void main(){
-            vec3 col = mix(botColor, midColor, smoothstep(0.0, 0.55, vUv.y));
-            col = mix(col, topColor, smoothstep(0.55, 1.0, vUv.y));
-            float vignette = smoothstep(1.1, 0.2, distance(vUv, vec2(0.5,0.6)));
-            gl_FragColor = vec4(col, 0.55 * vignette);
-          }
-        `}
-      />
-    </mesh>
-  );
-}
-
+/**
+ * Lightweight celestial "Cielo" effect using a single Canvas for particles
+ * plus CSS layers for god rays, gradient sky and ethereal glow.
+ * No Three.js — keeps things fast, smooth and premium.
+ */
 const SkyEffectThree = ({ isPlaying }: SkyEffectThreeProps) => {
-  const clouds = useMemo(() => {
-    const tints = ['#ffffff', '#fff4d6', '#ffe9b5', '#fff8e7', '#f7dca0'];
-    return Array.from({ length: 9 }).map((_, i) => ({
-      position: [
-        (Math.random() - 0.5) * 10,
-        (Math.random() - 0.3) * 4 + 0.5,
-        -1 - Math.random() * 2,
-      ] as [number, number, number],
-      scale: 3 + Math.random() * 3.5,
-      tint: new THREE.Color(tints[i % tints.length]),
-      speed: 0.08 + Math.random() * 0.12,
-      phase: Math.random() * Math.PI * 2,
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = 0;
+    let height = 0;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      width = rect.width;
+      height = rect.height;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
+
+    // Particles
+    const COUNT = 70;
+    type P = {
+      x: number; y: number;
+      r: number;
+      baseAlpha: number;
+      vx: number; vy: number;
+      twPhase: number; twSpeed: number;
+      gold: boolean;
+    };
+    const rand = (a: number, b: number) => a + Math.random() * (b - a);
+    const particles: P[] = Array.from({ length: COUNT }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      r: rand(0.6, 2.2),
+      baseAlpha: rand(0.35, 0.9),
+      vx: rand(-0.05, 0.05),
+      vy: rand(-0.12, -0.02),
+      twPhase: Math.random() * Math.PI * 2,
+      twSpeed: rand(0.6, 1.6),
+      gold: Math.random() > 0.45,
     }));
-  }, []);
+
+    let smoothLevel = 0;
+    let last = performance.now();
+
+    const draw = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+
+      const target = isPlaying ? getAudioEffectsEngine().getLevel() : 0;
+      smoothLevel += (target - smoothLevel) * Math.min(1, dt * 4);
+
+      ctx.clearRect(0, 0, width, height);
+
+      const t = now / 1000;
+      const speedBoost = 1 + smoothLevel * 1.6;
+
+      for (const p of particles) {
+        p.x += p.vx * speedBoost * 60 * dt + Math.sin(t * 0.5 + p.twPhase) * 0.08;
+        p.y += p.vy * speedBoost * 60 * dt;
+
+        if (p.y < -5) {
+          p.y = height + 5;
+          p.x = Math.random() * width;
+        }
+        if (p.x < -5) p.x = width + 5;
+        else if (p.x > width + 5) p.x = -5;
+
+        const tw = 0.55 + 0.45 * Math.sin(t * p.twSpeed + p.twPhase);
+        const a = p.baseAlpha * tw * (0.7 + smoothLevel * 0.5);
+        const r = p.r * (1 + smoothLevel * 0.25);
+
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 6);
+        if (p.gold) {
+          g.addColorStop(0, `rgba(255, 232, 170, ${a})`);
+          g.addColorStop(0.4, `rgba(255, 210, 130, ${a * 0.35})`);
+          g.addColorStop(1, 'rgba(255, 200, 120, 0)');
+        } else {
+          g.addColorStop(0, `rgba(255, 250, 235, ${a})`);
+          g.addColorStop(0.4, `rgba(255, 240, 210, ${a * 0.3})`);
+          g.addColorStop(1, 'rgba(255, 240, 210, 0)');
+        }
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r * 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      rafRef.current = requestAnimationFrame(draw);
+    };
+
+    rafRef.current = requestAnimationFrame(draw);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      ro.disconnect();
+    };
+  }, [isPlaying]);
 
   return (
-    <div className="absolute inset-0 pointer-events-none" style={{ opacity: 1, transition: 'opacity 600ms ease' }}>
-      <Canvas
-        camera={{ position: [0, 0, 6], fov: 55 }}
-        dpr={[1, 2]}
-        gl={{ alpha: true, antialias: true, premultipliedAlpha: false }}
-        style={{ background: 'transparent' }}
-        frameloop={isPlaying ? 'always' : 'demand'}
-      >
-        <SkyBackground />
-        <GodRays />
-        {clouds.map((c, i) => <CloudPuff key={i} {...c} />)}
-        <Particles count={200} />
-      </Canvas>
-      {/* Soft top glow overlay for extra dreaminess */}
-      <div className="absolute inset-0" style={{
-        background: 'radial-gradient(ellipse at 50% 15%, hsl(45 100% 92% / 0.35), transparent 60%)',
-        mixBlendMode: 'screen',
-      }} />
+    <div
+      className="absolute inset-0 pointer-events-none animate-fade-in"
+      style={{ transition: 'opacity 700ms ease' }}
+    >
+      {/* Sky gradient base */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(180deg, hsl(45 100% 96% / 0.85) 0%, hsl(40 90% 90% / 0.7) 45%, hsl(35 80% 82% / 0.55) 100%)',
+        }}
+      />
+
+      {/* God rays — pure CSS, very soft */}
+      <div className="absolute inset-0 overflow-hidden" style={{ mixBlendMode: 'screen' }}>
+        {[-22, -10, 0, 10, 22].map((angle, i) => (
+          <div
+            key={i}
+            className="absolute left-1/2 top-0 origin-top"
+            style={{
+              width: i === 2 ? '120px' : '80px',
+              height: '140%',
+              transform: `translateX(-50%) rotate(${angle}deg)`,
+              background: `linear-gradient(to bottom, hsl(45 100% 88% / ${0.32 - Math.abs(angle) * 0.006}) 0%, hsl(40 95% 78% / ${0.18 - Math.abs(angle) * 0.004}) 35%, transparent 75%)`,
+              filter: 'blur(18px)',
+              animation: `pulse-glow ${5 + i * 0.6}s ease-in-out infinite`,
+              animationDelay: `${i * 0.4}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Canvas particles */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full"
+        style={{ mixBlendMode: 'screen' }}
+      />
+
+      {/* Warm ethereal glow */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse at 50% 18%, hsl(45 100% 92% / 0.55), transparent 55%), radial-gradient(ellipse at 50% 90%, hsl(35 85% 78% / 0.3), transparent 60%)',
+          mixBlendMode: 'screen',
+        }}
+      />
+
+      {/* Subtle vignette for depth */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: 'radial-gradient(ellipse at center, transparent 55%, hsl(30 40% 30% / 0.18) 100%)',
+        }}
+      />
     </div>
   );
 };
