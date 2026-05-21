@@ -209,6 +209,15 @@ const AudioVisualizer = ({ isPlaying, effect }: AudioVisualizerProps) => {
         </div>
       )}
 
+      {/* STARFIELD — Estrellas Celestiales */}
+      {effect === 'starfield' && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none animate-fade-in">
+          <Suspense fallback={<div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, hsl(225 60% 12%), hsl(230 80% 3%))' }} />}>
+            <StarfieldEffect isPlaying={isPlaying} />
+          </Suspense>
+        </div>
+      )}
+
       {/* CANDLES */}
       {effect === 'candles' && (
         <div className="absolute inset-0 flex items-end justify-center gap-8 pb-10 pointer-events-none">
