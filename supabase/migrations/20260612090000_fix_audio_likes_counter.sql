@@ -1,9 +1,6 @@
--- Reparación de audio_likes: en la base de datos real faltó el permiso de
--- lectura pública (los contadores se muestran a todos) y el contador
--- audios.likes quedó desincronizado.
-
-GRANT SELECT ON public.audio_likes TO anon;
-GRANT SELECT ON public.audio_likes TO authenticated;
+-- Reparación de audio_likes: el contador audios.likes quedó desincronizado.
+-- Las filas de audio_likes permanecen privadas (política de Lovable);
+-- el conteo público se sirve desde audios.likes vía este trigger.
 
 -- Asegurar que el trigger del contador existe y funciona
 CREATE OR REPLACE FUNCTION public.sync_audio_likes_count()
