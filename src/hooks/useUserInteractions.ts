@@ -11,6 +11,7 @@ export const useUserInteractions = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
   // Ajuste local del contador de likes en esta sesión. El conteo público
   // vive en audios.likes (lo mantiene un trigger en la base de datos);
   // las filas de audio_likes son privadas de cada usuario.
@@ -24,13 +25,15 @@ export const useUserInteractions = () => {
       if (cancelled) return;
       setUserId(user?.id ?? null);
       if (!user) return;
-      const [likesRes, savesRes] = await Promise.all([
+      const [likesRes, savesRes, followsRes] = await Promise.all([
         supabase.from('audio_likes').select('audio_id').eq('user_id', user.id),
         supabase.from('audio_saves').select('audio_id').eq('user_id', user.id),
+        supabase.from('user_follows').select('followed_id').eq('follower_id', user.id),
       ]);
       if (cancelled) return;
       if (likesRes.data) setLikedIds(new Set(likesRes.data.map(r => r.audio_id)));
       if (savesRes.data) setSavedIds(new Set(savesRes.data.map(r => r.audio_id)));
+      if (followsRes.data) setFollowedIds(new Set(followsRes.data.map(r => r.followed_id)));
     })();
     return () => { cancelled = true; };
   }, []);
@@ -86,15 +89,44 @@ export const useUserInteractions = () => {
     void toggle('audio_saves', audioId, savedIds, setSavedIds);
   }, [toggle, savedIds]);
 
+  const toggleFollow = useCallback(async (creatorId: string) => {
+    if (!requireAuth() || !userId) return;
+    if (creatorId === userId) return;
+    const key = `user_follows:${creatorId}`;
+    if (pending.current.has(key)) return;
+    pending.current.add(key);
+    const adding = !followedIds.has(creatorId);
+    setFollowedIds(prev => {
+      const next = new Set(prev);
+      if (adding) next.add(creatorId); else next.delete(creatorId);
+      return next;
+    });
+    const { error } = adding
+      ? await supabase.from('user_follows').insert({ follower_id: userId, followed_id: creatorId })
+      : await supabase.from('user_follows').delete().eq('follower_id', userId).eq('followed_id', creatorId);
+    pending.current.delete(key);
+    if (error) {
+      setFollowedIds(prev => {
+        const next = new Set(prev);
+        if (adding) next.delete(creatorId); else next.add(creatorId);
+        return next;
+      });
+      toast({ description: 'No se pudo guardar tu reacción. Intenta de nuevo.', duration: 2500 });
+    }
+  }, [userId, requireAuth, followedIds]);
+
   return {
     isAuthenticated: !!userId,
+    userId,
     isLiked: (audioId: string) => likedIds.has(audioId),
     isSaved: (audioId: string) => savedIds.has(audioId),
     // Contador del feed ajustado por los toggles de esta sesión (nunca negativo)
     likeCount: (audioId: string, fallback: number) =>
       Math.max(0, fallback + (likeDeltas[audioId] ?? 0)),
+    isFollowing: (creatorId: string) => followedIds.has(creatorId),
     toggleLike,
     toggleSave,
+    toggleFollow,
   };
 };
 

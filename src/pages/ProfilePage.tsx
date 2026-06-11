@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Settings, Bookmark, Clock, LogOut, ChevronRight, Sun, Moon, Play, Pause, Pencil, Trash2, Scissors } from 'lucide-react';
+import { Settings, Bookmark, Clock, LogOut, ChevronRight, Sun, Moon, Play, Pause, Pencil, Trash2, Scissors, UserCheck } from 'lucide-react';
 import AudioEditorDialog from '@/components/AudioEditorDialog';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -31,6 +31,56 @@ const ProfilePage = () => {
   const [amenIds, setAmenIds] = useState<string[]>([]);
   const [amenOpen, setAmenOpen] = useState(false);
   const [amenAudios, setAmenAudios] = useState<UserAudioRow[] | null>(null);
+  const [followedIds, setFollowedIds] = useState<string[]>([]);
+  const [followsOpen, setFollowsOpen] = useState(false);
+  const [followedCreators, setFollowedCreators] = useState<{ id: string; name: string; avatar: string }[] | null>(null);
+
+  const loadFollows = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setFollowedIds([]); return; }
+    const { data } = await supabase
+      .from('user_follows')
+      .select('followed_id')
+      .eq('follower_id', user.id)
+      .order('created_at', { ascending: false });
+    setFollowedIds((data || []).map(r => r.followed_id));
+  };
+
+  useEffect(() => { loadFollows(); }, []);
+
+  const toggleFollowsList = async () => {
+    const next = !followsOpen;
+    setFollowsOpen(next);
+    if (!next || followedCreators !== null) return;
+    if (followedIds.length === 0) { setFollowedCreators([]); return; }
+    // El nombre/avatar del creador se toma de sus audios públicos
+    const { data } = await supabase
+      .from('audios')
+      .select('user_id,creator_name,creator_avatar,created_at')
+      .in('user_id', followedIds)
+      .order('created_at', { ascending: false });
+    const seen = new Map<string, { id: string; name: string; avatar: string }>();
+    for (const row of data || []) {
+      if (!seen.has(row.user_id)) {
+        seen.set(row.user_id, { id: row.user_id, name: row.creator_name, avatar: row.creator_avatar || '🙏' });
+      }
+    }
+    setFollowedCreators(followedIds.map(id =>
+      seen.get(id) ?? { id, name: 'Creador', avatar: '🙏' }
+    ));
+  };
+
+  const handleUnfollow = async (creatorId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase.from('user_follows').delete().eq('follower_id', user.id).eq('followed_id', creatorId);
+    if (error) {
+      toast({ title: 'No se pudo dejar de seguir', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setFollowedIds(ids => ids.filter(id => id !== creatorId));
+    setFollowedCreators(list => (list || []).filter(c => c.id !== creatorId));
+  };
 
   const loadAmenIds = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -180,9 +230,9 @@ const ProfilePage = () => {
         </div>
         <div className="flex gap-8">
           {[
-            { value: '24', label: 'Siguiendo' },
-            { value: '156', label: 'Guardados' },
-            { value: '12', label: 'Playlists' },
+            { value: String(followedIds.length), label: 'Siguiendo' },
+            { value: String(amenIds.length), label: 'Amén' },
+            { value: String(myAudios.length), label: 'Audios' },
           ].map(s => (
             <div key={s.label} className="text-center">
               <p className="text-lg font-bold gold-text">{s.value}</p>
@@ -253,6 +303,40 @@ const ProfilePage = () => {
                   </div>
                 );
               })
+            )}
+          </div>
+        )}
+        <button
+          onClick={toggleFollowsList}
+          className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-card/60 transition-colors"
+          aria-expanded={followsOpen}
+        >
+          <UserCheck className="w-5 h-5 text-primary" />
+          <span className="text-sm font-medium flex-1 text-left">Mis seguidos</span>
+          <span className="text-xs text-muted-foreground">{followedIds.length}</span>
+          <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${followsOpen ? 'rotate-90' : ''}`} />
+        </button>
+        {followsOpen && (
+          <div className="space-y-2 pl-2 pb-2">
+            {followedCreators === null ? (
+              <p className="text-xs text-muted-foreground px-3">Cargando…</p>
+            ) : followedCreators.length === 0 ? (
+              <p className="text-xs text-muted-foreground px-3">Aún no sigues a ningún creador. Toca "Seguir" en el feed para verlos aquí.</p>
+            ) : (
+              followedCreators.map(c => (
+                <div key={c.id} className="flex items-center gap-2 p-2.5 rounded-xl card-luminous">
+                  <div className="w-9 h-9 shrink-0 rounded-full bg-gradient-to-br from-gold/30 to-rose/30 flex items-center justify-center text-lg">
+                    {c.avatar}
+                  </div>
+                  <p className="flex-1 min-w-0 text-xs font-semibold truncate">{c.name}</p>
+                  <button
+                    onClick={() => handleUnfollow(c.id)}
+                    className="shrink-0 text-[10px] px-2.5 py-1 rounded-full bg-primary/15 text-primary border border-primary/20 font-medium"
+                  >
+                    Siguiendo
+                  </button>
+                </div>
+              ))
             )}
           </div>
         )}

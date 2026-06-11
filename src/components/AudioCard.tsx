@@ -8,6 +8,7 @@ import LyricsPanel from './LyricsPanel';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAudioPlayback } from '@/audio/AudioPlaybackContext';
 import type { UserInteractions } from '@/hooks/useUserInteractions';
+import { toast } from '@/hooks/use-toast';
 
 // Fallback transcripts for mock audios (synced with TranscriptionPanel mocks)
 const MOCK_TRANSCRIPTS: Record<string, { time: number; text: string }[]> = {
@@ -63,6 +64,17 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
   const handleSave = () => {
     if (interactions) interactions.toggleSave(audio.id);
     else setLocalSaved(s => !s);
+  };
+
+  const isOwnAudio = !!interactions?.userId && audio.creatorId === interactions.userId;
+  const following = !!audio.creatorId && !!interactions?.isFollowing(audio.creatorId);
+  const handleFollow = () => {
+    if (!interactions) return;
+    if (!audio.creatorId) {
+      toast({ description: 'Este audio es contenido de ejemplo, su creador no se puede seguir todavía', duration: 2500 });
+      return;
+    }
+    interactions.toggleFollow(audio.creatorId);
   };
   const [lyricsOpen, setLyricsOpen] = useState(false);
   const lyricsSegments = useMemo(
@@ -141,9 +153,19 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <p className="text-sm font-semibold text-foreground truncate">{audio.creatorName}</p>
-              <button className="shrink-0 text-[10px] px-2.5 py-0.5 rounded-full border border-primary/40 text-primary hover:bg-primary/10 transition-colors font-medium bg-card/60 backdrop-blur-sm">
-                Seguir
-              </button>
+              {!isOwnAudio && (
+                <button
+                  onClick={handleFollow}
+                  aria-pressed={following}
+                  className={`shrink-0 text-[10px] px-2.5 py-0.5 rounded-full font-medium transition-colors backdrop-blur-sm ${
+                    following
+                      ? 'bg-primary/15 text-primary border border-primary/20'
+                      : 'border border-primary/40 text-primary hover:bg-primary/10 bg-card/60'
+                  }`}
+                >
+                  {following ? 'Siguiendo' : 'Seguir'}
+                </button>
+              )}
             </div>
             <p className="text-[10px] text-muted-foreground">{audio.category}</p>
           </div>

@@ -4,6 +4,7 @@ export interface AudioPost {
   description: string;
   creatorName: string;
   creatorAvatar: string;
+  creatorId?: string; // user_id del creador en Supabase; los mocks no tienen
   duration: number; // seconds
   likes: number;
   comments: number;

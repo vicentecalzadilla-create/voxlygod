@@ -62,6 +62,7 @@ const FeedPage = () => {
           description: row.description || '',
           creatorName: row.creator_name,
           creatorAvatar: row.creator_avatar || '🙏',
+          creatorId: row.user_id,
           duration: row.duration || 0,
           likes: row.likes || 0,
           comments: row.comments || 0,
