@@ -43,7 +43,9 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
   const [localSaved, setLocalSaved] = useState(audio.isSaved);
   const amen = interactions ? interactions.isLiked(audio.id) : localAmen;
   const saved = interactions ? interactions.isSaved(audio.id) : localSaved;
-  const likeCount = audio.likes + (interactions ? interactions.likeDelta(audio.id) : (amen ? 1 : 0));
+  const likeCount = interactions
+    ? interactions.likeCount(audio.id, audio.likes)
+    : audio.likes + (amen ? 1 : 0);
   const [amenBurstKey, setAmenBurstKey] = useState(0);
   const [iconPulseKey, setIconPulseKey] = useState(0);
 

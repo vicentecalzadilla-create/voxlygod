@@ -11,7 +11,10 @@ export const useUserInteractions = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
-  // Ajuste local del contador de likes en esta sesión (evita recargar el feed)
+  // Conteo real de likes por audio (fuente de verdad: tabla audio_likes).
+  // null mientras carga o si la lectura pública no está disponible.
+  const [likeCounts, setLikeCounts] = useState<Record<string, number> | null>(null);
+  // Ajuste local del contador en esta sesión, usado solo como fallback
   const [likeDeltas, setLikeDeltas] = useState<Record<string, number>>({});
   const pending = useRef<Set<string>>(new Set());
 
@@ -21,14 +24,21 @@ export const useUserInteractions = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (cancelled) return;
       setUserId(user?.id ?? null);
-      if (!user) return;
-      const [likesRes, savesRes] = await Promise.all([
-        supabase.from('audio_likes').select('audio_id').eq('user_id', user.id),
-        supabase.from('audio_saves').select('audio_id').eq('user_id', user.id),
-      ]);
-      if (cancelled) return;
-      if (likesRes.data) setLikedIds(new Set(likesRes.data.map(r => r.audio_id)));
-      if (savesRes.data) setSavedIds(new Set(savesRes.data.map(r => r.audio_id)));
+      const countsReq = supabase.from('audio_likes').select('audio_id');
+      if (user) {
+        const [likesRes, savesRes, countsRes] = await Promise.all([
+          supabase.from('audio_likes').select('audio_id').eq('user_id', user.id),
+          supabase.from('audio_saves').select('audio_id').eq('user_id', user.id),
+          countsReq,
+        ]);
+        if (cancelled) return;
+        if (likesRes.data) setLikedIds(new Set(likesRes.data.map(r => r.audio_id)));
+        if (savesRes.data) setSavedIds(new Set(savesRes.data.map(r => r.audio_id)));
+        if (countsRes.data) setLikeCounts(buildCounts(countsRes.data));
+      } else {
+        const countsRes = await countsReq;
+        if (!cancelled && countsRes.data) setLikeCounts(buildCounts(countsRes.data));
+      }
     })();
     return () => { cancelled = true; };
   }, []);
@@ -76,7 +86,12 @@ export const useUserInteractions = () => {
 
   const toggleLike = useCallback((audioId: string) => {
     void toggle('audio_likes', audioId, likedIds, setLikedIds, (added) => {
-      setLikeDeltas(prev => ({ ...prev, [audioId]: (prev[audioId] ?? 0) + (added ? 1 : -1) }));
+      const step = added ? 1 : -1;
+      setLikeDeltas(prev => ({ ...prev, [audioId]: (prev[audioId] ?? 0) + step }));
+      setLikeCounts(prev => prev === null ? prev : ({
+        ...prev,
+        [audioId]: Math.max(0, (prev[audioId] ?? 0) + step),
+      }));
     });
   }, [toggle, likedIds]);
 
@@ -88,10 +103,21 @@ export const useUserInteractions = () => {
     isAuthenticated: !!userId,
     isLiked: (audioId: string) => likedIds.has(audioId),
     isSaved: (audioId: string) => savedIds.has(audioId),
-    likeDelta: (audioId: string) => likeDeltas[audioId] ?? 0,
+    // Conteo real desde audio_likes; si no está disponible, cae al contador
+    // del feed ajustado por los toggles de esta sesión (nunca negativo).
+    likeCount: (audioId: string, fallback: number) =>
+      likeCounts !== null
+        ? (likeCounts[audioId] ?? 0)
+        : Math.max(0, fallback + (likeDeltas[audioId] ?? 0)),
     toggleLike,
     toggleSave,
   };
+};
+
+const buildCounts = (rows: { audio_id: string }[]) => {
+  const counts: Record<string, number> = {};
+  for (const r of rows) counts[r.audio_id] = (counts[r.audio_id] ?? 0) + 1;
+  return counts;
 };
 
 export type UserInteractions = ReturnType<typeof useUserInteractions>;

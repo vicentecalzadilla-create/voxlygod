@@ -28,6 +28,51 @@ const ProfilePage = () => {
   const [myAudios, setMyAudios] = useState<UserAudioRow[]>([]);
   const [loadingAudios, setLoadingAudios] = useState(true);
   const [editing, setEditing] = useState<UserAudioRow | null>(null);
+  const [amenIds, setAmenIds] = useState<string[]>([]);
+  const [amenOpen, setAmenOpen] = useState(false);
+  const [amenAudios, setAmenAudios] = useState<UserAudioRow[] | null>(null);
+
+  const loadAmenIds = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setAmenIds([]); return; }
+    const { data } = await supabase
+      .from('audio_likes')
+      .select('audio_id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    setAmenIds((data || []).map(r => r.audio_id));
+  };
+
+  useEffect(() => { loadAmenIds(); }, []);
+
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  const toggleAmenList = async () => {
+    const next = !amenOpen;
+    setAmenOpen(next);
+    if (!next || amenAudios !== null) return;
+    const realIds = amenIds.filter(id => UUID_RE.test(id));
+    if (realIds.length === 0) { setAmenAudios([]); return; }
+    const { data } = await supabase
+      .from('audios')
+      .select('id,title,audio_url,duration,visual_effect,category,description,tags,allow_immersive_effects,allow_voice_change')
+      .in('id', realIds);
+    // Conservar el orden de los Amén más recientes primero
+    const byId = new Map((data || []).map(a => [a.id, a as UserAudioRow]));
+    setAmenAudios(realIds.map(id => byId.get(id)).filter((a): a is UserAudioRow => !!a));
+  };
+
+  const handleRemoveAmen = async (a: UserAudioRow) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase.from('audio_likes').delete().eq('user_id', user.id).eq('audio_id', a.id);
+    if (error) {
+      toast({ title: 'No se pudo quitar el Amén', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setAmenIds(ids => ids.filter(id => id !== a.id));
+    setAmenAudios(list => (list || []).filter(x => x.id !== a.id));
+  };
 
   const loadMyAudios = async () => {
     setLoadingAudios(true);
@@ -163,17 +208,60 @@ const ProfilePage = () => {
 
       {/* Menu */}
       <div className="space-y-1">
+        <button
+          onClick={toggleAmenList}
+          className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-card/60 transition-colors"
+          aria-expanded={amenOpen}
+        >
+          <span className="w-5 h-5 flex items-center justify-center text-lg text-primary leading-none">🙏</span>
+          <span className="text-sm font-medium flex-1 text-left">Mis Amén</span>
+          <span className="text-xs text-muted-foreground">{amenIds.length}</span>
+          <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${amenOpen ? 'rotate-90' : ''}`} />
+        </button>
+        {amenOpen && (
+          <div className="space-y-2 pl-2 pb-2">
+            {amenAudios === null ? (
+              <p className="text-xs text-muted-foreground px-3">Cargando…</p>
+            ) : amenAudios.length === 0 ? (
+              <p className="text-xs text-muted-foreground px-3">Aún no le has dado Amén a ningún audio. Toca 🙏 en el feed para guardarlos aquí.</p>
+            ) : (
+              amenAudios.map(a => {
+                const isCurrent = playback.currentTrackId === a.id;
+                const playing = isCurrent && playback.isPlaying;
+                return (
+                  <div key={a.id} className="flex items-center gap-2 p-2.5 rounded-xl card-luminous">
+                    <button
+                      onClick={() => handlePlay(a)}
+                      className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-primary-foreground"
+                      style={{ background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))' }}
+                      aria-label={playing ? 'Pausar' : 'Reproducir'}
+                    >
+                      {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold truncate">{a.title}</p>
+                      <p className="text-[10px] text-muted-foreground">{a.category || 'General'} · {a.duration || 0}s</p>
+                    </div>
+                    <button
+                      onClick={() => handleRemoveAmen(a)}
+                      className="w-8 h-8 rounded-full hover:bg-destructive/10 flex items-center justify-center"
+                      aria-label="Quitar Amén"
+                      title="Quitar Amén"
+                    >
+                      <span className="text-sm grayscale opacity-70">🙏</span>
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
         {[
-          { icon: null, emoji: '🙏', label: 'Mis Amén', count: '43' },
           { icon: Bookmark, label: 'Guardados', count: '156' },
           { icon: Clock, label: 'Historial', count: '' },
-        ].map(({ icon: Icon, emoji, label, count }) => (
+        ].map(({ icon: Icon, label, count }) => (
           <button key={label} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-card/60 transition-colors">
-            {emoji ? (
-              <span className="w-5 h-5 flex items-center justify-center text-lg text-primary leading-none">{emoji}</span>
-            ) : (
-              <Icon className="w-5 h-5 text-primary" />
-            )}
+            <Icon className="w-5 h-5 text-primary" />
             <span className="text-sm font-medium flex-1 text-left">{label}</span>
             {count && <span className="text-xs text-muted-foreground">{count}</span>}
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
