@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { ToggleLeft, ToggleRight } from 'lucide-react';
 import { mockAudios, categories, type AudioPost } from '@/data/mockData';
 import AudioCard from '@/components/AudioCard';
+import { useUserInteractions } from '@/hooks/useUserInteractions';
 import AudioEditorDialog from '@/components/AudioEditorDialog';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -13,6 +14,7 @@ interface EditableInfo {
 }
 
 const FeedPage = () => {
+  const interactions = useUserInteractions();
   const [activeIndex, setActiveIndex] = useState(0);
   const [playSignal, setPlaySignal] = useState(1);
   const [autoNext, setAutoNext] = useState(false);
@@ -189,6 +191,7 @@ const FeedPage = () => {
             playSignal={playSignal}
             onNext={autoNext ? handleNext : () => {}}
             onEdit={ownedIds[audio.id] ? () => setEditing(ownedIds[audio.id]) : undefined}
+            interactions={interactions}
           />
         ))}
       </div>

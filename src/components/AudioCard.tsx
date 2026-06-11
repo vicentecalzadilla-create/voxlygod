@@ -7,6 +7,7 @@ import VoiceSelectorPanel from './VoiceSelectorPanel';
 import LyricsPanel from './LyricsPanel';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAudioPlayback } from '@/audio/AudioPlaybackContext';
+import type { UserInteractions } from '@/hooks/useUserInteractions';
 
 // Fallback transcripts for mock audios (synced with TranscriptionPanel mocks)
 const MOCK_TRANSCRIPTS: Record<string, { time: number; text: string }[]> = {
@@ -34,13 +35,33 @@ interface AudioCardProps {
   playSignal?: number;
   onNext: () => void;
   onEdit?: () => void;
+  interactions?: UserInteractions;
 }
 
-const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, onEdit }: AudioCardProps) => {
-  const [amen, setAmen] = useState(audio.isLiked);
+const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, onEdit, interactions }: AudioCardProps) => {
+  const [localAmen, setLocalAmen] = useState(audio.isLiked);
+  const [localSaved, setLocalSaved] = useState(audio.isSaved);
+  const amen = interactions ? interactions.isLiked(audio.id) : localAmen;
+  const saved = interactions ? interactions.isSaved(audio.id) : localSaved;
+  const likeCount = audio.likes + (interactions ? interactions.likeDelta(audio.id) : (amen ? 1 : 0));
   const [amenBurstKey, setAmenBurstKey] = useState(0);
   const [iconPulseKey, setIconPulseKey] = useState(0);
-  const [saved, setSaved] = useState(audio.isSaved);
+
+  const handleAmen = () => {
+    if (interactions) {
+      interactions.toggleLike(audio.id);
+      if (!interactions.isAuthenticated) return; // solo muestra el aviso de iniciar sesión
+    } else {
+      setLocalAmen(a => !a);
+    }
+    setAmenBurstKey(k => k + 1);
+    setIconPulseKey(k => k + 1);
+  };
+
+  const handleSave = () => {
+    if (interactions) interactions.toggleSave(audio.id);
+    else setLocalSaved(s => !s);
+  };
   const [lyricsOpen, setLyricsOpen] = useState(false);
   const lyricsSegments = useMemo(
     () => audio.transcript && audio.transcript.length ? audio.transcript : (MOCK_TRANSCRIPTS[audio.id] || []),
@@ -270,11 +291,7 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
         {/* Side actions */}
       <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-5 items-center">
         <button
-          onClick={() => {
-            setAmen(!amen);
-            setAmenBurstKey(k => k + 1);
-            setIconPulseKey(k => k + 1);
-          }}
+          onClick={handleAmen}
           className="relative flex flex-col items-center gap-0.5 group"
         >
           <span
@@ -283,7 +300,7 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
             style={amen ? { filter: 'drop-shadow(0 0 8px hsl(var(--primary) / 0.7))' } : undefined}
           >🙏</span>
           <span className={`text-[10px] tabular-nums transition-colors ${amen ? 'text-primary font-semibold' : 'text-foreground/70'}`}>
-            {(audio.likes + (amen ? 1 : 0)).toLocaleString()}
+            {likeCount.toLocaleString()}
           </span>
           {amenBurstKey > 0 && (
             <span
@@ -307,7 +324,7 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
           <Share2 className="w-6 h-6 text-foreground/50" />
           <span className="text-[10px] text-foreground/70">{audio.shares}</span>
         </button>
-        <button onClick={() => setSaved(!saved)} className="flex flex-col items-center gap-0.5">
+        <button onClick={handleSave} className="flex flex-col items-center gap-0.5">
           <Bookmark className={`w-6 h-6 transition-colors ${saved ? 'fill-primary text-primary' : 'text-foreground/50'}`} />
           <span className="text-[10px] text-foreground/70">{saved ? 'Guardado' : 'Guardar'}</span>
         </button>

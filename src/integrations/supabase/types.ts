@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      audio_likes: {
+        Row: {
+          audio_id: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          audio_id: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          audio_id?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      audio_saves: {
+        Row: {
+          audio_id: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          audio_id: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          audio_id?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       audios: {
         Row: {
           allow_immersive_effects: boolean | null
