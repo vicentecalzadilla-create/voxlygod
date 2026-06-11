@@ -25,7 +25,14 @@ const FeedPage = () => {
   const activeIndexRef = useRef(0);
   const scrollRafRef = useRef<number | null>(null);
 
-  const audios = useMemo(() => [...userAudios, ...mockAudios], [userAudios]);
+  const allAudios = useMemo(() => [...userAudios, ...mockAudios], [userAudios]);
+  const audios = useMemo(() => {
+    if (activeCategory === 'Para ti') return allAudios;
+    return allAudios.filter(a =>
+      a.category?.toLowerCase() === activeCategory.toLowerCase() ||
+      a.tags?.some(tag => tag.toLowerCase() === activeCategory.toLowerCase())
+    );
+  }, [allAudios, activeCategory]);
 
   useEffect(() => {
     let cancelled = false;
