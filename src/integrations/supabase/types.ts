@@ -14,36 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      audio_comments: {
-        Row: {
-          audio_id: string
-          author_avatar: string | null
-          author_name: string
-          body: string
-          created_at: string | null
-          id: string
-          user_id: string
-        }
-        Insert: {
-          audio_id: string
-          author_avatar?: string | null
-          author_name: string
-          body: string
-          created_at?: string | null
-          id?: string
-          user_id: string
-        }
-        Update: {
-          audio_id?: string
-          author_avatar?: string | null
-          author_name?: string
-          body?: string
-          created_at?: string | null
-          id?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       audio_likes: {
         Row: {
           audio_id: string
