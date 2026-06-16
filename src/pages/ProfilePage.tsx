@@ -6,6 +6,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAudioPlayback } from '@/audio/AudioPlaybackContext';
+import { resolveAudios } from '@/data/resolveAudios';
 import type { AudioPost } from '@/data/mockData';
 
 interface UserAudioRow {
@@ -68,6 +69,36 @@ const ProfilePage = () => {
     setFollowedCreators(followedIds.map(id =>
       seen.get(id) ?? { id, name: 'Creador', avatar: '🙏' }
     ));
+  };
+
+  const [savedOpen, setSavedOpen] = useState(false);
+  const [savedCount, setSavedCount] = useState(0);
+  const [savedAudios, setSavedAudios] = useState<AudioPost[] | null>(null);
+
+  const loadSavedCount = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSavedCount(0); return; }
+    const { count } = await supabase
+      .from('audio_saves')
+      .select('audio_id', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+    setSavedCount(count ?? 0);
+  };
+
+  useEffect(() => { loadSavedCount(); }, []);
+
+  const toggleSavedList = async () => {
+    const next = !savedOpen;
+    setSavedOpen(next);
+    if (!next || savedAudios !== null) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSavedAudios([]); return; }
+    const { data } = await supabase
+      .from('audio_saves')
+      .select('audio_id,created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    setSavedAudios(await resolveAudios((data || []).map(r => r.audio_id)));
   };
 
   const handleUnfollow = async (creatorId: string) => {
@@ -340,17 +371,51 @@ const ProfilePage = () => {
             )}
           </div>
         )}
-        {[
-          { icon: Bookmark, label: 'Guardados', count: '156' },
-          { icon: Clock, label: 'Historial', count: '' },
-        ].map(({ icon: Icon, label, count }) => (
-          <button key={label} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-card/60 transition-colors">
-            <Icon className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium flex-1 text-left">{label}</span>
-            {count && <span className="text-xs text-muted-foreground">{count}</span>}
-            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          </button>
-        ))}
+        <button
+          onClick={toggleSavedList}
+          className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-card/60 transition-colors"
+          aria-expanded={savedOpen}
+        >
+          <Bookmark className="w-5 h-5 text-primary" />
+          <span className="text-sm font-medium flex-1 text-left">Guardados</span>
+          <span className="text-xs text-muted-foreground">{savedCount}</span>
+          <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${savedOpen ? 'rotate-90' : ''}`} />
+        </button>
+        {savedOpen && (
+          <div className="space-y-2 pl-2 pb-2">
+            {savedAudios === null ? (
+              <p className="text-xs text-muted-foreground px-3">Cargando…</p>
+            ) : savedAudios.length === 0 ? (
+              <p className="text-xs text-muted-foreground px-3">Aún no has guardado audios. Toca el marcador 🔖 en el feed para guardarlos aquí.</p>
+            ) : (
+              savedAudios.map(a => {
+                const isCurrent = playback.currentTrackId === a.id;
+                const playing = isCurrent && playback.isPlaying;
+                return (
+                  <div key={a.id} className="flex items-center gap-2 p-2.5 rounded-xl card-luminous">
+                    <button
+                      onClick={() => playback.toggleTrack(a).catch(() => {})}
+                      className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-primary-foreground"
+                      style={{ background: 'linear-gradient(135deg, hsl(38 80% 55%), hsl(340 60% 70%))' }}
+                      aria-label={playing ? 'Pausar' : 'Reproducir'}
+                    >
+                      {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold truncate">{a.title}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{a.creatorName}</p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+        <button className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-card/60 transition-colors">
+          <Clock className="w-5 h-5 text-primary" />
+          <span className="text-sm font-medium flex-1 text-left">Historial</span>
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        </button>
       </div>
 
       {/* My Audios */}
