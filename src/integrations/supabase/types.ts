@@ -14,51 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      playlists: {
-        Row: {
-          cover_emoji: string | null
-          created_at: string | null
-          id: string
-          title: string
-          user_id: string
-        }
-        Insert: {
-          cover_emoji?: string | null
-          created_at?: string | null
-          id?: string
-          title: string
-          user_id: string
-        }
-        Update: {
-          cover_emoji?: string | null
-          created_at?: string | null
-          id?: string
-          title?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      playlist_items: {
-        Row: {
-          audio_id: string
-          created_at: string | null
-          id: string
-          playlist_id: string
-        }
-        Insert: {
-          audio_id: string
-          created_at?: string | null
-          id?: string
-          playlist_id: string
-        }
-        Update: {
-          audio_id?: string
-          created_at?: string | null
-          id?: string
-          playlist_id?: string
-        }
-        Relationships: []
-      }
       audio_comments: {
         Row: {
           audio_id: string
@@ -203,6 +158,59 @@ export type Database = {
           user_id?: string
           verse?: string | null
           visual_effect?: string | null
+        }
+        Relationships: []
+      }
+      playlist_items: {
+        Row: {
+          audio_id: string
+          created_at: string | null
+          id: string
+          playlist_id: string
+        }
+        Insert: {
+          audio_id: string
+          created_at?: string | null
+          id?: string
+          playlist_id: string
+        }
+        Update: {
+          audio_id?: string
+          created_at?: string | null
+          id?: string
+          playlist_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playlist_items_playlist_id_fkey"
+            columns: ["playlist_id"]
+            isOneToOne: false
+            referencedRelation: "playlists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playlists: {
+        Row: {
+          cover_emoji: string | null
+          created_at: string | null
+          id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          cover_emoji?: string | null
+          created_at?: string | null
+          id?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          cover_emoji?: string | null
+          created_at?: string | null
+          id?: string
+          title?: string
+          user_id?: string
         }
         Relationships: []
       }
