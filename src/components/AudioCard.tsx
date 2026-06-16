@@ -66,6 +66,28 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
     else setLocalSaved(s => !s);
   };
 
+  const [shareBump, setShareBump] = useState(0);
+  const handleShare = async () => {
+    const url = `${window.location.origin}/?audio=${audio.id}`;
+    const shareData = {
+      title: audio.title,
+      text: `${audio.title} — ${audio.creatorName} en Voxly 🙏`,
+      url,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        setShareBump(b => b + 1); // solo contamos si no canceló
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast({ description: 'Enlace copiado al portapapeles', duration: 2000 });
+        setShareBump(b => b + 1);
+      }
+    } catch {
+      // El usuario canceló el diálogo de compartir: no hacemos nada
+    }
+  };
+
   const isOwnAudio = !!interactions?.userId && audio.creatorId === interactions.userId;
   const following = !!audio.creatorId && !!interactions?.isFollowing(audio.creatorId);
   const handleFollow = () => {
@@ -344,9 +366,9 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
           <MessageCircle className="w-6 h-6 text-foreground/50" />
           <span className="text-[10px] text-foreground/70">{audio.comments}</span>
         </button>
-        <button className="flex flex-col items-center gap-0.5">
-          <Share2 className="w-6 h-6 text-foreground/50" />
-          <span className="text-[10px] text-foreground/70">{audio.shares}</span>
+        <button onClick={handleShare} className="flex flex-col items-center gap-0.5" aria-label="Compartir">
+          <Share2 className="w-6 h-6 text-foreground/50 transition-transform active:scale-90" />
+          <span className="text-[10px] text-foreground/70">{(audio.shares + shareBump).toLocaleString()}</span>
         </button>
         <button onClick={handleSave} className="flex flex-col items-center gap-0.5">
           <Bookmark className={`w-6 h-6 transition-colors ${saved ? 'fill-primary text-primary' : 'text-foreground/50'}`} />
