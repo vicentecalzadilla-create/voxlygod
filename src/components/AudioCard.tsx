@@ -5,6 +5,7 @@ import AudioVisualizer from './AudioVisualizer';
 import ImmersiveEffectsPanel from './ImmersiveEffectsPanel';
 import VoiceSelectorPanel from './VoiceSelectorPanel';
 import LyricsPanel from './LyricsPanel';
+import CommentsPanel from './CommentsPanel';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAudioPlayback } from '@/audio/AudioPlaybackContext';
 import type { UserInteractions } from '@/hooks/useUserInteractions';
@@ -66,6 +67,8 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
     else setLocalSaved(s => !s);
   };
 
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [commentsDelta, setCommentsDelta] = useState(0);
   const [shareBump, setShareBump] = useState(0);
   const handleShare = async () => {
     const url = `${window.location.origin}/?audio=${audio.id}`;
@@ -362,9 +365,9 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
             </span>
           )}
         </button>
-        <button className="flex flex-col items-center gap-0.5">
+        <button onClick={() => setCommentsOpen(true)} className="flex flex-col items-center gap-0.5" aria-label="Comentarios">
           <MessageCircle className="w-6 h-6 text-foreground/50" />
-          <span className="text-[10px] text-foreground/70">{audio.comments}</span>
+          <span className="text-[10px] text-foreground/70">{Math.max(0, audio.comments + commentsDelta).toLocaleString()}</span>
         </button>
         <button onClick={handleShare} className="flex flex-col items-center gap-0.5" aria-label="Compartir">
           <Share2 className="w-6 h-6 text-foreground/50 transition-transform active:scale-90" />
@@ -386,6 +389,13 @@ const AudioCard = ({ audio, isActive, autoPlay = true, playSignal = 0, onNext, o
           </button>
         )}
       </div>
+
+      <CommentsPanel
+        audioId={audio.id}
+        open={commentsOpen}
+        onOpenChange={setCommentsOpen}
+        onCountChange={(delta) => setCommentsDelta(d => d + delta)}
+      />
 
     </div>
   );
