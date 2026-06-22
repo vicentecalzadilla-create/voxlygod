@@ -12,6 +12,7 @@ export const useUserInteractions = () => {
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
+  const [ready, setReady] = useState(false);
   // Ajuste local del contador de likes en esta sesión. El conteo público
   // vive en audios.likes (lo mantiene un trigger en la base de datos);
   // las filas de audio_likes son privadas de cada usuario.
@@ -24,7 +25,7 @@ export const useUserInteractions = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (cancelled) return;
       setUserId(user?.id ?? null);
-      if (!user) return;
+      if (!user) { setReady(true); return; }
       const [likesRes, savesRes, followsRes] = await Promise.all([
         supabase.from('audio_likes').select('audio_id').eq('user_id', user.id),
         supabase.from('audio_saves').select('audio_id').eq('user_id', user.id),
@@ -34,6 +35,7 @@ export const useUserInteractions = () => {
       if (likesRes.data) setLikedIds(new Set(likesRes.data.map(r => r.audio_id)));
       if (savesRes.data) setSavedIds(new Set(savesRes.data.map(r => r.audio_id)));
       if (followsRes.data) setFollowedIds(new Set(followsRes.data.map(r => r.followed_id)));
+      setReady(true);
     })();
     return () => { cancelled = true; };
   }, []);
@@ -118,6 +120,10 @@ export const useUserInteractions = () => {
   return {
     isAuthenticated: !!userId,
     userId,
+    ready,
+    likedIds,
+    savedIds,
+    followedIds,
     isLiked: (audioId: string) => likedIds.has(audioId),
     isSaved: (audioId: string) => savedIds.has(audioId),
     // Contador del feed ajustado por los toggles de esta sesión (nunca negativo)

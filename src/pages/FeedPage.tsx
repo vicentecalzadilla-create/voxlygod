@@ -3,6 +3,7 @@ import { ToggleLeft, ToggleRight } from 'lucide-react';
 import { mockAudios, categories, type AudioPost } from '@/data/mockData';
 import AudioCard from '@/components/AudioCard';
 import { useUserInteractions } from '@/hooks/useUserInteractions';
+import { personalizeFeed, type Affinity } from '@/data/personalizeFeed';
 import AudioEditorDialog from '@/components/AudioEditorDialog';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -27,14 +28,29 @@ const FeedPage = () => {
   const activeIndexRef = useRef(0);
   const scrollRafRef = useRef<number | null>(null);
 
+  // Foto de la afinidad tomada una sola vez (cuando los datos del usuario
+  // están listos), para que el orden personalizado no cambie con el scroll.
+  const [affinity, setAffinity] = useState<Affinity | null>(null);
+  useEffect(() => {
+    if (interactions.ready && !affinity) {
+      setAffinity({
+        likedIds: new Set(interactions.likedIds),
+        savedIds: new Set(interactions.savedIds),
+        followedIds: new Set(interactions.followedIds),
+      });
+    }
+  }, [interactions.ready, interactions.likedIds, interactions.savedIds, interactions.followedIds, affinity]);
+
   const allAudios = useMemo(() => [...userAudios, ...mockAudios], [userAudios]);
   const audios = useMemo(() => {
-    if (activeCategory === 'Para ti') return allAudios;
+    if (activeCategory === 'Para ti') {
+      return affinity ? personalizeFeed(allAudios, affinity) : allAudios;
+    }
     return allAudios.filter(a =>
       a.category?.toLowerCase() === activeCategory.toLowerCase() ||
       a.tags?.some(tag => tag.toLowerCase() === activeCategory.toLowerCase())
     );
-  }, [allAudios, activeCategory]);
+  }, [allAudios, activeCategory, affinity]);
 
   useEffect(() => {
     let cancelled = false;
